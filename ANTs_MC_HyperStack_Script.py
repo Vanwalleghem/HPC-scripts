@@ -14,47 +14,52 @@ tif_file_folder=sys.argv[1]
 os.chdir(os.path.dirname(tif_file_folder))
 N = int((mp.cpu_count()/4)-1)
 tif_list=glob.glob(tif_file_folder+'/*.tif')
+if not (os.path.exists(tif_file_folder+'/3Dreg/template.tif') and os.path.exists(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-1]+'_0.tif')):
+    temp=[]
+    for idx_nb,file in enumerate(tif_list):
+        if idx_nb==0:
+            temp=io.imread(file,plugin='pil')
+        else:
+            temp=np.concatenate((temp,io.imread(file,plugin='pil')),axis=0)
+        
+    file_name=tif_file_folder.split('/')[-1]
+    range2=int(file_name.split('range')[-1].split('_')[0])
+    step=int(file_name.split('step')[-1].split('_')[0])
+    TrueSlices=(range2/step)+1;
+    dims=temp.shape
+    temp=np.reshape(temp,[dims[0]/TrueSlices,TrueSlices,dims[1],dims[2]])
 
-temp=[]
-for idx_nb,file in enumerate(tif_list):
-    if idx_nb==0:
-        temp=io.imread(file,plugin='pil')
-    else:
-        temp=np.concatenate((temp,io.imread(file,plugin='pil')),axis=0)
+    #Computing the difference between points from frame to frame should give the point with least changes
+    #std_movie=temp[:,0:200].std(axis=(2,3))
+    number_of_frames_to_check=50
+    std_movie=np.diff(temp[0:number_of_frames_to_check].reshape([number_of_frames_to_check,temp.shape[1],temp.shape[2]*temp.shape[3]]),axis=-1)
+    idx_template=np.argmin(std_movie,axis=0)
+    #ignores the 0s and compute the mean index of the lowest changes
+    idx_template=int(idx_template[idx_template>0].ravel().mean())
 
+    #tmp_idx=np.argmin(signal.detrend(std_movie))
+    #mean image of the 3 points surrounding the minimum movement
+    template=temp[idx_template-1:idx_template+2].mean(axis=0)
+    directory = os.getcwd()
+    try:
+        new_dir=tif_file_folder+'/3Dreg'
+        os.mkdir(new_dir)
+    except:
+        print('directory exists')
+        
+    os.chdir(new_dir)
+    template_name=new_dir+'/template.tif'
+    tifffile.imsave(template_name,template.astype(np.uint16))
+    img_seq_list=list()
+
+    for img_nb in range(0,temp.shape[0]):
+        img_name=new_dir+'/'+tif_file_folder.split('/')[-1]+'_'+str(img_nb)+'.tif'
+        tifffile.imsave(img_name,temp[img_nb].astype(np.uint16))
+        img_seq_list.append(img_name)
     
-file_name=tif_file_folder.split('/')[-1]
-#range=int(file_name.split('range')[-1].split('_')[0])
-step=int(file_name.split('step')[-1].split('_')[0])
-TrueSlices=(range/step)+1;
-dims=temp.shape
-temp=np.reshape(temp,[dims[0]/TrueSlices,TrueSlices,dims[1],dims[2]])
-
-#Computing the difference between points from frame to frame should give the point with least changes
-#std_movie=temp[:,0:200].std(axis=(2,3))
-number_of_frames_to_check=50
-std_movie=np.diff(temp[0:number_of_frames_to_check].reshape([number_of_frames_to_check,temp.shape[1],temp.shape[2]*temp.shape[3]]),axis=-1)
-idx_template=np.argmin(std_movie,axis=0)
-#ignores the 0s and compute the mean index of the lowest changes
-idx_template=int(idx_template[idx_template>0].ravel().mean())
-
-#tmp_idx=np.argmin(signal.detrend(std_movie))
-#mean image of the 3 points surrounding the minimum movement
-template=temp[idx_template-1:idx_template+2].mean(axis=0)
-directory = os.getcwd()
-try:
-    new_dir=tif_file_folder+'/3Dreg'
-    os.mkdir(new_dir)
-except:
-    print('directory exists')
-os.chdir(new_dir)
-template_name=new_dir+'/template.tif'
-tifffile.imsave(template_name,template.astype(np.uint16))
-img_seq_list=list()
-for img_nb in range(0,temp.shape[0]):
-    img_name=new_dir+'/'+tif_file_folder.split('/')[-1]+'_'+str(img_nb)+'.tif'
-    tifffile.imsave(img_name,temp[img_nb].astype(np.uint16))
-    img_seq_list.append(img_name)
+img_seq_list=glob.glob(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-1]+'*.tif')
+template_name=tif_file_folder+'/3Dreg/template.tif'
+        
     
 def Register_single_image(Mov_name,template_name):        
     output_name = Mov_name.replace('.tif','_LongReg')      

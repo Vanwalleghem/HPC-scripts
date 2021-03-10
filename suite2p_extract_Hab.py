@@ -16,14 +16,14 @@ ops['fs'] = final_frate
 
 print(data_path+'/suite2p_'+os.path.basename(fnames[0]))
 #Check if suite2p has already run
-if not os.path.isdir(data_path+'/suite2p_'+os.path.basename(fnames[0])):
+if not os.path.isdir(data_path+'/suite2p_'+os.path.basename(fnames[0]).replace('.tif','')):
     #for file in glob.glob(os.path.join(data_path,'*.tif')):        
     db = {'look_one_level_down': False, # whether to look in ALL subfolders when searching for tiffs
           'data_path': [data_path], # a list of folders with tiffs 
                                                  # (or folder of folders with tiffs if look_one_level_down is True, or subfolders is not empty)         
           'fast_disk': os.environ["TMPDIR"], # string which specifies where the binary file will be stored (should be an SSD)
-          'tiff_list': fnames, # list of tiffs in folder * data_path *!
-          'save_folder': data_path+'/suite2p_'+os.path.basename(fnames[0])
+          'tiff_list': [fnames[0],fnames[0].replace('media1','media3')], # list of tiffs in folder * data_path *!
+          'save_folder': data_path+'/suite2p_'+os.path.basename(fnames[0]).replace('.tif','')
         }
     # run one experiment
 

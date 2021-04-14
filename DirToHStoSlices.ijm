@@ -42,7 +42,7 @@ function find(myDir) {
 					  }
 					 print("");
 					*/ 
-				title2=replace(title1,'power50','power50-1');
+				title2=replace(title1,'power60','power60-1');
 				//print(title2);
 				selectWindow(title2);
 				saveAs("Tiff", output+"Slice"+toString(j)+"_"+substring(title1,0,lengthOf(title1))+".tif");                	

@@ -5,7 +5,8 @@ from suite2p import run_s2p
 import shutil
 import glob
 fnames=[sys.argv[1]]
-final_frate=int(os.environ["FPS"]) # frame rate in Hz
+final_frate=4#int(os.environ["FPS"]) # frame rate in Hz
+import faulthandler; faulthandler.enable()
 
 # set your options for running
 ops = np.load('./ops_1P_ENS.npy',allow_pickle=True).item()
@@ -13,10 +14,12 @@ data_path = os.path.dirname(fnames[0])
 
 ops['nchannels'] = 1
 ops['fs'] = final_frate
+ops['sparse_mode']=False
+ops['nonrigid']=False
 
 print(data_path+'/suite2p_'+os.path.basename(fnames[0]))
 #Check if suite2p has already run
-if not os.path.isdir(data_path+'/suite2p_'+os.path.basename(fnames[0]).replace('.tif','')):
+if not os.path.isfile(data_path+'/suite2p_'+os.path.basename(fnames[0]).replace('.tif','')+'/plane0/F.npy'):
     #for file in glob.glob(os.path.join(data_path,'*.tif')):        
     db = {'look_one_level_down': False, # whether to look in ALL subfolders when searching for tiffs
           'data_path': [data_path], # a list of folders with tiffs 

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+#PBS -A UQ-SCI-SBMS
+
+#PBS -l select=1:ncpus=20:mem=110GB:vmem=110GB
+
+#PBS -l walltime=96:00:00
+
+#PBS -j oe
+
+#Now do some things
+
+cd /30days/uqgvanwa/Emmanuel/
+antsMultivariateTemplateConstruction2.sh -d 3 -b 1 -c 2 -j 4 -k 1 -e 1 -g 0.1 -i 10 -n 0 -m MI -o Habituation hs*.tif

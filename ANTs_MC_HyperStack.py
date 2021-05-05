@@ -16,7 +16,7 @@ fnames_all.sort()
 with open('ENS_ANTs.pbs','w') as the_file:
 	the_file.write('#!/bin/bash \n')
 	the_file.write('#PBS -A UQ-SCI-SBMS \n')
-	the_file.write('#PBS -l select=1:ncpus=8:mem=150GB:vmem=150GB \n')
+	the_file.write('#PBS -l select=1:ncpus=18:mem=120GB:vmem=120GB \n')
 	the_file.write('#PBS -l walltime=100:00:00 \n')
 	the_file.write('#PBS -j oe \n')
 	job_string = """#PBS -t 1-%s \n""" % (str(len(fnames_all)))

@@ -6,7 +6,7 @@ import sys
 
 fnames_all =[]
 folder=str(sys.argv[1])
-base_folder='/QRISdata/Q0291/'+folder # folder containing the demo files
+base_folder='/QRISdata/'+folder # folder containing the demo files
 for file in glob.glob(os.path.join(base_folder,'GV*/')):    
     fnames_all.append(file)
 fnames_all.sort()

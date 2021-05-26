@@ -11,13 +11,18 @@ import multiprocessing as mp
 from scipy import signal
 import gc
 
+def is_file_empty(file_path):
+    """ Check if file is empty by confirming if its size is 0 bytes"""
+    # Check if file exist and it is empty
+    return os.path.exists(file_path) and os.stat(file_path).st_size == 0
+
 tif_file_folder=sys.argv[1]
 os.chdir(os.path.dirname(tif_file_folder))
 N = 2 #int((mp.cpu_count()/4)-2)
 tif_list=glob.glob(tif_file_folder+'/*.tif')
 tif_list.sort()
 print(tif_list)
-if not (os.path.exists(tif_file_folder+'/3Dreg/template.tif') and os.path.exists(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-1]+'_0.tif')):
+if not (os.path.exists(tif_file_folder+'/3Dreg/template.tif') and is_file_empty(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-1]+'_0.tif')):
     temp=[]
     for idx_nb,file in enumerate(tif_list):
         if idx_nb==0:

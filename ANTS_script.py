@@ -7,7 +7,7 @@ fnames_all =[]
 folder=str(sys.argv[1])
 FixedImg=str(sys.argv[2])
 
-base_folder='/QRISdata/Q0291/ForANTS/'+folder+'/' # folder containing the demo files 
+base_folder='/QRISdata/Q0976/'+folder+'/' # folder containing the demo files 
 for file in glob.glob(os.path.join(base_folder,'*.nrrd')):
     if file.endswith(".nrrd"):
         fnames_all.append(file) 

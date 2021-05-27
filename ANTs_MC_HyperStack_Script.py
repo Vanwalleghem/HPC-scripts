@@ -15,6 +15,14 @@ def is_file_empty(file_path):
     """ Check if file is empty by confirming if its size is 0 bytes"""
     # Check if file exist and it is empty
     return os.path.exists(file_path) and os.stat(file_path).st_size == 0
+    
+def Register_single_image(Mov_name,template_name):        
+    output_name = Mov_name.replace('.tif','_LongReg')      
+    if is_file_empty(output_name+'.nii'):
+        #job_string = "antsRegistration -d 3 --float 1 -o [OutImg, OutImg.nii] -n WelchWindowedSinc -w [0.005,0.995] -u 1 -r [FixImg,MovImg, 1] -t rigid[0.1] -m MI[FixImg,MovImg,1,32, Regular,0.25] -c [1000x500x200x50,1e-7,5] -f 8x4x2x1 -s 2x1x1x0vox -t Affine[0.1] -m MI[FixImg,MovImg,1,32, Regular,0.25] -c [1000x500x200x50,1e-7,5] -f 8x4x2x1 -s 2x1x1x0vox -t SyN[0.05,6,0.5] -m CC[FixImg,MovImg,1,2] -c [100x500x200x50,1e-7,5] -f 8x4x2x1 -s 2x2x1x0vox -v 0"    
+        job_string = "antsRegistration -d 3 --float 1 -o [OutImg,OutImg.nii] -n WelchWindowedSinc -w [0.05,0.95]  -u 0 - r [FixImg,MovImg] -t Rigid[0.1] -m MI[FixImg,MovImg,1,32,Regular,0.25] -c 500x200x100x50 -f 8x4x2x1 -s 3x2x1x0 -t Affine[0.1] -m MI[FixImg,MovImg,1,32,Regular,0.25] -c 500x200x100x50 -f 8x4x2x1 -s 3x2x1x0 -t SyN[0.1] -m CC[FixImg,MovImg,1,2] -c 100x50x20x10 -f 8x4x2x1 -s 3x2x1x0 -v 1"        
+        job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
+        call([job_string],shell=True)    
 
 tif_file_folder=sys.argv[1]
 os.chdir(os.path.dirname(tif_file_folder))
@@ -22,7 +30,7 @@ N = 2 #int((mp.cpu_count()/4)-2)
 tif_list=glob.glob(tif_file_folder+'/*.tif')
 tif_list.sort()
 print(tif_list)
-if not (os.path.exists(tif_file_folder+'/3Dreg/template.tif') and is_file_empty(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-1]+'_0.tif')):
+if not (os.path.exists(tif_file_folder+'/3Dreg/template.tif') and not is_file_empty(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-1]+'_0.tif')):
     temp=[]
     for idx_nb,file in enumerate(tif_list):
         if idx_nb==0:
@@ -69,15 +77,7 @@ if not (os.path.exists(tif_file_folder+'/3Dreg/template.tif') and is_file_empty(
          
 img_seq_list=glob.glob(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-1]+'*.tif')
 template_name=tif_file_folder+'/3Dreg/template.tif'
-        
-    
-def Register_single_image(Mov_name,template_name):        
-    output_name = Mov_name.replace('.tif','_LongReg')      
-    if not os.path.isfile(output_name+'.nii'):
-        #job_string = "antsRegistration -d 3 --float 1 -o [OutImg, OutImg.nii] -n WelchWindowedSinc -w [0.005,0.995] -u 1 -r [FixImg,MovImg, 1] -t rigid[0.1] -m MI[FixImg,MovImg,1,32, Regular,0.25] -c [1000x500x200x50,1e-7,5] -f 8x4x2x1 -s 2x1x1x0vox -t Affine[0.1] -m MI[FixImg,MovImg,1,32, Regular,0.25] -c [1000x500x200x50,1e-7,5] -f 8x4x2x1 -s 2x1x1x0vox -t SyN[0.05,6,0.5] -m CC[FixImg,MovImg,1,2] -c [100x500x200x50,1e-7,5] -f 8x4x2x1 -s 2x2x1x0vox -v 0"    
-        job_string = "antsRegistration -d 3 --float 1 -o [OutImg,OutImg.nii] -n WelchWindowedSinc -w [0.05,0.95]  -u 0 - r [FixImg,MovImg] -t Rigid[0.1] -m MI[FixImg,MovImg,1,32,Regular,0.25] -c 500x200x100x50 -f 8x4x2x1 -s 3x2x1x0 -t Affine[0.1] -m MI[FixImg,MovImg,1,32,Regular,0.25] -c 500x200x100x50 -f 8x4x2x1 -s 3x2x1x0 -t SyN[0.1] -m CC[FixImg,MovImg,1,2] -c 100x50x20x10 -f 8x4x2x1 -s 3x2x1x0 -v 1"        
-        job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
-        call([job_string],shell=True)    
+     
     
 p=mp.Pool(processes = N)
 result=[p.apply_async(Register_single_image, (img_name,template_name)) for img_name in img_seq_list]

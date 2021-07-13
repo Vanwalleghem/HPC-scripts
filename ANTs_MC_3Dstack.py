@@ -117,6 +117,11 @@ for img_nb,C1_name in enumerate(img_seq_list):
             raise
     img_temp=img_temp.get_fdata()    
     img_temp=np.squeeze(np.asarray(img_temp,dtype='uint32'))
+    if img_temp.max()==0:
+        Register_single_image_forced(C1_name.replace('_LongReg.nii','.tif'),template_name)
+        img_temp=nib.load(C1_name)
+        img_temp=img_temp.get_fdata()    
+        img_temp=np.squeeze(np.asarray(img_temp,dtype='uint32'))
     frames[base_img.shape[2]*(img_nb):base_img.shape[2]+base_img.shape[2]*(img_nb),:,:]=np.transpose(img_temp,(2,1,0))
 tifffile.imsave(name.replace('.nii','_3D.tif'),frames)
 

@@ -8,7 +8,7 @@ fnames_all =[]
 folder=str(sys.argv[1])
 fps=str(sys.argv[2])
 comp=str(sys.argv[3])
-base_folder='/QRISdata/Q0291/ForAnalysis/'+folder # folder containing the demo files
+base_folder='/QRISdata/'+folder # folder containing the demo files
 for file in glob.glob(os.path.join(base_folder,'*.tif')):
     if file.endswith(".tif") and not file.endswith("_mean.tif"):
         fnames_all .append(file)

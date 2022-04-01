@@ -19,14 +19,14 @@ with open('CaImAn_array.sh','w') as the_file:
  the_file.write('#SBATCH --partition normal \n')
  the_file.write('#SBATCH --mem 64G \n')
  the_file.write('#SBATCH  -c 16 \n') 
- the_file.write('#SBATCH  -t 10:0:0 \n')
+ the_file.write('#SBATCH  -t 20:0:0 \n')
  the_file.write('#SBATCH  --output=test_%A_%a.out \n')
  job_string = """#SBATCH --array=1-%s \n""" % (str(len(fnames_all)))
  the_file.write(job_string) 
  job_string = 'filename=`ls -d '+base_folder+'/GV_* | tail -n +\${SLURM_ARRAY_TASK_ID} | head -1` \n'
  the_file.write(job_string) 
- the_file.write('conda activate caiman\n')
- the_file.write('source activate caiman\n')
+ the_file.write('source ~/miniconda3/etc/profile.d/conda.sh\n')
+ the_file.write('conda activate caiman\n') 
  job_string = 'python ~/caiman_extract_ENS.py $filename \n' 
  the_file.write(job_string)
 

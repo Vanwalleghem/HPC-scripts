@@ -8,6 +8,10 @@ fnames=[os.path.normpath(sys.argv[1])]
 
 # set your options for running
 data_path = os.path.dirname(fnames[0])
+range2=int(fnames[0].split('range')[-1].split('_')[0])
+step=int(fnames[0].split('step')[-1].split('_')[0])
+nplanes=int((range2/step)+1);     
+
 
 ops=default_ops()
 ops['fs']=2
@@ -27,7 +31,7 @@ ops['max_iterations']=100
 ops['inner_neuropil_radius']=1
 ops['neuropil_extract']=0
 ops['baseline']='prctile'
-ops['nchannels'] = 1
+ops['nplanes'] = nplanes
 
 print(data_path+'/suite2p_'+os.path.basename(fnames[0]))
 #Check if suite2p has already run

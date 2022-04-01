@@ -28,6 +28,8 @@ def CheckFilesAndFix(tif_file_folder):
     temp=np.reshape(temp,[int(dims[0]/TrueSlices),TrueSlices,dims[1],dims[2]])
     gc.collect()
     new_dir=tif_file_folder+'/3Dreg'
+    if not os.path.isdir(new_dir):
+        os.makedirs(new_dir)
     for img_nb in range(0,temp.shape[0]):
         img_name=new_dir+'/'+tif_file_folder.split('/')[-1]+'_'+str(img_nb)+'.tif'
         try:

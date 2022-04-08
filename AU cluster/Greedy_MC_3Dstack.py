@@ -140,4 +140,4 @@ else:
  test=set(test) ^ set(img_seq_list)
  for img_name in test:
   Register_single_image_forced(img_name,template_name,mask_name)
-  print(img_name,file=f)
+  print(img_name)

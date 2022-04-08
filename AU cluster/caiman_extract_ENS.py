@@ -143,7 +143,13 @@ for slice_nb in range(0,Y.shape[1]):
         print(' ***** ')
         print('Number of total components: ', len(cnm.estimates.C))
         print('Number of accepted components: ', len(cnm.estimates.idx_components))
-
+        
+        try:
+            cnm.estimates.detrend_df_f(quantileMin=10, frames_window=400)
+        except:
+            pass
+        cnm.save(fnames[0].replace('.tif','.hdf5'))
+        
         #%% RE-RUN seeded CNMF on accepted patches to refine and perform deconvolution 
         cnm2 = cnm.refit(images, dview=dview)
         cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
@@ -151,7 +157,7 @@ for slice_nb in range(0,Y.shape[1]):
             cnm2.estimates.detrend_df_f(quantileMin=10, frames_window=400)
         except:
             pass
-        cnm2.save(fnames[0].replace('.tif','.hdf5'))
+        cnm2.save(fnames[0].replace('.tif','b.hdf5'))
     
 for file in glob.glob(os.path.join(os.path.dirname(fnames[0]),'*.mmap')):
     os.remove(file)

@@ -35,15 +35,15 @@ ops['nplanes'] = nplanes
 
 print(data_path+'/suite2p_'+os.path.basename(fnames[0]))
 #Check if suite2p has already run
-if not os.path.isdir(data_path+'/suite2p_'+os.path.basename(fnames[0])):
-    file = glob.glob(os.path.join(fnames[0],'*4D.tif'))        
-    db = {'look_one_level_down': False, # whether to look in ALL subfolders when searching for tiffs
-          'data_path': fnames, # a list of folders with tiffs 
-                                                 # (or folder of folders with tiffs if look_one_level_down is True, or subfolders is not empty)         
-          'fast_disk': os.environ["TMPDIR"], # string which specifies where the binary file will be stored (should be an SSD)
-          'tiff_list': file, # list of tiffs in folder * data_path *!
-          'save_folder': data_path+'/suite2p_'+os.path.basename(fnames[0])
-        }
-    # run one experiment
+#if not os.path.isdir(data_path+'/suite2p_'+os.path.basename(fnames[0])):
+file = glob.glob(os.path.join(fnames[0],'*4D.tif'))        
+db = {'look_one_level_down': False, # whether to look in ALL subfolders when searching for tiffs
+      'data_path': fnames, # a list of folders with tiffs 
+                                             # (or folder of folders with tiffs if look_one_level_down is True, or subfolders is not empty)         
+      'fast_disk': os.environ["TMPDIR"], # string which specifies where the binary file will be stored (should be an SSD)
+      'tiff_list': file, # list of tiffs in folder * data_path *!
+      'save_folder': data_path+'/suite2p_'+os.path.basename(fnames[0])
+    }
+# run one experiment
 
-    opsEnd=run_s2p(ops=ops,db=db)
+opsEnd=run_s2p(ops=ops,db=db)

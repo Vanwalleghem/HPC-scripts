@@ -5,6 +5,17 @@ from skimage import io
 import numpy as np
 import gc
 
+def is_file_empty(file_path):
+    """ Check if file is empty by confirming if its size is 0 bytes"""
+    # Check if file exist and it is empty    
+    if os.path.exists(file_path):
+        if os.stat(file_path).st_size == 0:
+            return True
+        else:
+            return False
+    else:
+        return True 
+
 def CheckFilesAndFix(tif_file_folder):
     #load and concatenate the OME.tif
     tif_list=glob.glob(tif_file_folder+'/*.tif')
@@ -27,19 +38,17 @@ def CheckFilesAndFix(tif_file_folder):
     print(dims)
     temp=np.reshape(temp,[int(dims[0]/TrueSlices),TrueSlices,dims[1],dims[2]])
     gc.collect()
-    new_dir=tif_file_folder+'/3Dreg'    
+    new_dir=tif_file_folder+'/3Dreg'
     if not os.path.isdir(new_dir):
         os.makedirs(new_dir)
     for img_nb in range(0,temp.shape[0]):
         img_name=new_dir+'/'+tif_file_folder.split('/')[-1]+'_'+str(img_nb)+'.tif'
-        if os.path.exists(img_name):
-            try:
-                test=tifffile.imread(img_name)
-                if not test.shape==(TrueSlices,dims[1],dims[2]):
-                    tifffile.imsave(img_name,temp[img_nb].astype(np.uint16))
-            except:
+        try:
+            test=tifffile.imread(img_name)
+            if not test.shape==(TrueSlices,dims[1],dims[2]):
                 tifffile.imsave(img_name,temp[img_nb].astype(np.uint16))
-        else:
+        except:
             tifffile.imsave(img_name,temp[img_nb].astype(np.uint16))
+            
     del temp
     gc.collect()

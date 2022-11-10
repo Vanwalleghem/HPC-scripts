@@ -1,0 +1,26 @@
+https://auth.globus.org/v2/oauth2/authorize?client_id=7f4ddcb8-66c7-4543-8ebc-4d5d35e8b335&redirect_uri=https%3A%2F%2Fauth.globus.org%2Fv2%2Fweb%2Fauth-code&scope=urn%3Aglobus%3Aauth%3Ascope%3Atransfer.api.globus.org%3Aall%5B%2Ahttps%3A%2F%2Fauth.globus.org%2Fscopes%2Fbfc3eff4-f5ca-4b4d-8532-e9a155f3613f%2Fdata_access%5D+openid+profile+email+urn%3Aglobus%3Aauth%3Ascope%3Aauth.globus.org%3Aview_identity_set&state=_default&response_type=code&access_type=offline&prompt=login
+
+
+
+ bfc3eff4-f5ca-4b4d-8532-e9a155f3613f:/visitor/ls3070/id16a/s08/volfloat/s08_mid11_110nm_rec_.vol
+ 
+ 
+ GenomeDK:   b1fd4934-d11d-11ec-a061-c32fb1c879e7
+ 
+ Perso: 39b45d32-d0ff-11ec-9ebf-c3c2ad65d825
+ 
+ rsync -rtPDz --info=progress2 uqgvanwa@tinaroo.rcc.uq.edu.au:/QRISdata/Q3066/Data/GF_Fed2020/20200730/GV_20200730_fish4_ENSFed_6DPF_range110_step5_exposure21_power60/3Dreg/*.tif ./
+
+find ./ -type f -name '*b.hdf5' -exec mv -t ./ {} +
+
+GV_20200730_fish4_ENS_6DPF_range110_step5_exposure21_power60
+
+GV_20200730_fish4_ENS_6DPF_range110_step5_exposure21_power60
+
+
+bfc3eff4-f5ca-4b4d-8532-e9a155f3613f
+
+
+/data/Q3066/Data/GF_Fed2020/20200730/GV_20200730_fish4_ENS_6DPF_range110_step5_exposure21_power60/3Dreg/GV_20200730_fish3_ENS_6DPF_range110_step5_exposure21_power60_1189.tif
+
+rsync -rtPDz --info=progress2 --files-from=./ToRsync.txt uqgvanwa@data.qriscloud.org.au:/data/Q3066/Data/GF_Fed2020/20200730/GV_20200730_fish3_ENS_6DPF_range110_step5_exposure21_power60/3Dreg/ ./

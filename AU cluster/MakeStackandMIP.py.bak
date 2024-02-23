@@ -32,8 +32,7 @@ def MakeListAndStacksAndMIP(tif_file_folder):
   if int(time)==0:
    ImgMax=np.max(temp, axis=0)
   else:
-   test=np.stack((ImgMax,np.max(temp, axis=0)), axis=0)
-   ImgMax=np.max(test, axis=0)
+   ImgMax=np.max(np.stack((ImgMax,np.max(temp, axis=0)), axis=0))  
  tifffile.imwrite(tif_file_folder+'/'+file_name+'_Max.tif',ImgMax)
   
 

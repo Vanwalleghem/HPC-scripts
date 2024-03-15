@@ -7,11 +7,8 @@ import tifffile
 from skimage import io
 import numpy as np
 import nibabel as nib
-import multiprocessing as mp
 from scipy import signal
 import gc
-import re
-import nrrd
 
 def is_file_empty(file_path):
     """ Check if file is empty by confirming if its size is 0 bytes"""
@@ -42,13 +39,13 @@ def Register_single_image(Mov_name,template_name,Mask_name):
         call([job_string],shell=True)
 
 def Register_single_image_forced(Mov_name,template_name,Mask_name):        
-    output_name = Mov_name.replace('.tif','_Greedy') 
+    output_name = Mov_name.replace('.tif','_Greedy').replace('3Dreg','3Dreg2')
     Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')
-    job_string = "greedy -d 3 -a -float -o Affine_name -i FixImg MovImg -gm MaskImg -n 100x40x20 -e 0.25 -ia-image-centers -m NCC 2x2x2"
+    job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 200x80x40 -e 0.25 -ia-image-centers -m NCC 3x3x3"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
     print(job_string)
-    job_string = "greedy -d 3 -float -o OutImg.nii -i FixImg MovImg -gm MaskImg -it Affine_name -n 100x50x20 -e 0.25 -m NCC 2x2x2"
+    job_string = "greedy -d 3 -o OutImg.nii -i FixImg MovImg -gm MaskImg -it Affine_name -n 200x80x40 -e 0.25 -m NCC 3x3x3"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
     job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii -r OutImg.nii Affine_name"
@@ -111,9 +108,9 @@ os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*.tif')
 template_name=tif_file_folder+'/3Dreg/template.tif'
 mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(tif_file_folder).split('_range')[0]+'_template.tif'
-#for img_name in img_seq_list:
-# Register_single_image(img_name,template_name,mask_name)
-# print(img_name)
+for img_name in img_seq_list:
+ Register_single_image_forced(img_name,template_name,mask_name)
+ print(img_name)
 
 MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped.nii')    
 MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]

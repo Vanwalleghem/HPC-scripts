@@ -140,35 +140,28 @@ for img_name in img_seq_list:
 
 MC_img_list=glob.glob(tif_file_folder+'/3Dreg/'+os.path.basename(os.path.dirname(tif_file_folder))+'*_Greedy.nii') 
 MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]
+file_name=os.path.basename(os.path.normpath(tif_file_folder))
 print(tif_file_folder+' '+str(len(MC_img_list))) 
 #f = open(tif_file_folder+'ListOfFailedFiles.txt','w')
-if len(MC_img_list)==1200:
- C1_name=MC_img_list[0]
- file_name=os.path.dirname(tif_file_folder)
+if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'_4D2.tif'):
+ C1_name=MC_img_list[0] 
  if file_name=='':
   file_name=os.path.basename(os.path.dirname(tif_file_folder))
  range2=int(file_name.split('range')[-1].split('_')[0])
  step=int(file_name.split('step')[-1].split('_')[0])
  TrueSlices=(range2/step)+1;   
- call(['/usr/local/bin/recall_medici '+C1_name],shell=True) 
+  
  base_img=nib.load(C1_name)
  base_img=np.squeeze(np.asarray(base_img.get_fdata(),dtype='uint16')).transpose()  
- C1frames=np.zeros((TrueSlices,len(MC_img_list)/TrueSlices,base_img.shape[1],base_img.shape[0]), dtype='uint16')
- for img_nb,C2_name in enumerate(MC_img_list): 
-  img_nb=int(C2_name.split('file_name')[1].split('_Greedy.nii')[0])
-  call(['/usr/local/bin/recall_medici '+C2_name],shell=True) 
+ C1frames=np.zeros((int(len(MC_img_list)),TrueSlices,base_img.shape[1],base_img.shape[2]), dtype='uint16')
+ for img_nb,C2_name in enumerate(MC_img_list):    
+  img_nb=int( re.search('_power.+_(\d+)\.tif',C2_name).group(1))  
   img_temp=nib.load(C2_name)
-  img_temp=img_temp.get_fdata() 
+  img_temp=img_temp.get_fdata()   
   img_temp=np.squeeze(np.asarray(img_temp,dtype='uint16')).transpose()
-  C2frames[img_nb,:,:,:]=img_temp 
+  C2frames[img_nb,:,:,:]=img_temp
+   
  tifffile.imsave(Fish_files_folder+'/'+file_name+'_4D.tif',C2frames)
  nrrd.write(Fish_files_folder+'/'+file_name+'_4D.nrrd',C2frames)   
-else:
- test=[x.replace('_Greedy.nii','.tif') for x in MC_img_list]
- test=set(test) ^ set(img_seq_list)
- for img_name in test:
-  Register_single_image_forced(img_name,template_name,mask_name)
-  #print(img_name,file=f)
-  
-  
+ 
 #f.close()

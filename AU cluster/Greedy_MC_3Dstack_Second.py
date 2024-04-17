@@ -37,14 +37,16 @@ def Register_single_image_noMask_SecondPass(Mov_name,template_name):
         call([job_string],shell=True)
         
 def Register_single_image_SecondPass(Mov_name,template_name,Mask_name):        
-    output_name = Mov_name.replace('_Warped.nii','_Greedy2')    
-    job_string = "greedy -d 3 -float -o OutImg.nii -i FixImg MovImg -gm MaskImg -n 200x100x50 -e 0.25 -m NCC 2x2x2"
-    job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
-    call([job_string],shell=True)          
-    output_image = Mov_name.replace('_Warped.nii','_Warped2')
-    job_string = "greedy -d 3 -rf FixImg -rm MovImg OutImg.nii -r "+output_name+'.nii'
-    job_string = job_string.replace('OutImg',output_image).replace('FixImg',template_name).replace('MovImg',Mov_name)
-    call([job_string],shell=True)
+ output_name = Mov_name.replace('_Warped.nii','_Greedy2')
+ if is_file_empty(output_name+'.nii'):   
+  job_string = "greedy -d 3 -float -o OutImg.nii -i FixImg MovImg -gm MaskImg -n 200x100x50 -e 0.25 -m NCC 2x2x2"
+  job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
+  call([job_string],shell=True)          
+ output_image = Mov_name.replace('_Warped.nii','_Warped2')
+ if is_file_empty(output_name+'.nii'):
+  job_string = "greedy -d 3 -rf FixImg -rm MovImg OutImg.nii -r "+output_name+'.nii'
+  job_string = job_string.replace('OutImg',output_image).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
+  call([job_string],shell=True)
     
 def Register_single_image(Mov_name,template_name,Mask_name):        
     output_name = Mov_name.replace('.tif','_Greedy')
@@ -150,7 +152,7 @@ if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'
  try:
   base_img=nib.load(C1_name)
  except:
-  Register_single_image_SecondPass(C1_name.replace('_Greedy2.nii',''),template_name)
+  Register_single_image_SecondPass(C1_name.replace('_Greedy2.nii',''),template_name,mask_name)
   base_img=nib.load(C1_name)
  base_img=np.squeeze(np.asarray(base_img.get_fdata(),dtype='uint16')).transpose()        
  C1frames=np.zeros((int(len(MC_img_list)),TrueSlices,base_img.shape[1],base_img.shape[2]), dtype='uint16')
@@ -160,7 +162,7 @@ if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'
    img_temp=nib.load(C2_name)
    img_temp=img_temp.get_fdata()
   except:
-   Register_single_image_SecondPass(C2_name.replace('_Greedy2.nii',''),template_name)
+   Register_single_image_SecondPass(C2_name.replace('_Greedy2.nii',''),template_name,mask_name)
    img_temp=nib.load(C1_name)
    img_temp=img_temp.get_fdata()    
   img_temp=np.squeeze(np.asarray(img_temp,dtype='uint16')).transpose()
@@ -172,5 +174,5 @@ else:
  test=[x.split('_Greedy2.nii')[0] for x in MC_img_list]
  test=set(test) ^ set(img_seq_list)
  for img_name in test:
-  Register_single_image_SecondPass(img_name,template_name)
+  Register_single_image_SecondPass(img_name,template_name,mask_name)
   print(img_name)

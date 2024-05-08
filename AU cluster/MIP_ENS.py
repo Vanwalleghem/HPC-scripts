@@ -11,4 +11,4 @@ TrueSlices=int((range2/step)+1);
 
 ImgData=tifffile.imread(tif_file_folder+'/'+file_name+'_4D2.tif')
 ImgMax=np.max(ImgData, axis=1)
-tifffile.imwrite(tif_file_folder+'/'+file_name+'_Max.tif',ImgMax)
+tifffile.imwrite('/faststorage/project/FUNCT_ENS/Max/'+file_name+'_Max.tif',ImgMax)

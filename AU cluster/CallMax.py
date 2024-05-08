@@ -7,7 +7,7 @@ import sys
 fnames_all =[]
 folder=str(sys.argv[1])
 base_folder=folder # folder containing the demo files
-for file in glob.glob(os.path.join(base_folder,'GV*/')): 
+for file in glob.glob(os.path.join(base_folder,'*/')): 
  fnames_all.append(file)
 fnames_all.sort()
 
@@ -18,7 +18,7 @@ with open('MIP_ENS.sh','w') as the_file:
  the_file.write('#SBATCH --partition normal \n')
  the_file.write('#SBATCH --mem 64G \n')
  the_file.write('#SBATCH  -c 16 \n') 
- the_file.write('#SBATCH  -t 1-0 \n')
+ the_file.write('#SBATCH  -t 0-2 \n')
  the_file.write('#SBATCH  --output=MIP_ENS_%A_%a.out \n')
  job_string = """#SBATCH --array=1-%s \n""" % (str(len(fnames_all)))
  the_file.write(job_string) 

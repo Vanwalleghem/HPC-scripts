@@ -1,0 +1,44 @@
+import time
+import glob
+import os
+import sys
+import tifffile
+import numpy as np
+
+FourD_Files = glob.glob('/faststorage/project/FUNCT_ENS/NewENSDataAU/**/*_4D2.tif', recursive=True)
+
+def bbox2_3D(img):
+    r = np.any(img, axis=(1, 2))
+    c = np.any(img, axis=(0, 2))
+    z = np.any(img, axis=(0, 1))
+    rmin, rmax = np.where(r)[0][[0, -1]]
+    cmin, cmax = np.where(c)[0][[0, -1]]
+    zmin, zmax = np.where(z)[0][[0, -1]]
+    return rmin, rmax, cmin, cmax, zmin, zmax
+
+for FourD_File in FourD_Files:
+ file_name=os.path.basename(FourD_File)
+ mask_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
+ date_name=mask_name.split('_RS_')[0]
+ date_name='20'+date_name[-2:]+date_name[2:4]+date_name[0:2]
+ mask_name=os.path.join(os.path.dirname(FourD_File),'RS_'+date_name+'_'+mask_name.split('_RS_')[1])
+ mask_check=tifffile.imread(mask_name)
+ crop_dims=bbox2_3D(mask_check)
+ 
+
+
+
+mask_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
+date_name=mask_name.split('_RS_')[0]
+date_name='20'+date_name[-2:]+date_name[2:4]+date_name[0:2]
+mask_name=os.path.join(tif_file_folder,'RS_'+date_name+'_'+mask_name.split('_RS_')[1])
+mask_check=tifffile.imread(mask_name)
+if len(mask_check.shape)==2:
+ dims=mask_check.shape 
+ range2=int(file_name.split('range')[-1].split('_')[0])
+ step=int(file_name.split('step')[-1].split('_')[0])
+ TrueSlices=int((range2/step)+1);
+ fixed_mask=np.zeros([TrueSlices,dims[0],dims[1]],dtype='uint16')
+ for i in range(0,TrueSlices):
+  fixed_mask[i,:,:]=mask_check
+ tifffile.imwrite(mask_name,fixed_mask.astype(np.uint16))

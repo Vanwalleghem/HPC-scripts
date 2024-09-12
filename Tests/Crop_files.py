@@ -17,8 +17,9 @@ def bbox2_3D(img):
     return rmin, rmax, cmin, cmax, zmin, zmax
 
 for FourD_File in FourD_Files:
- file_name=os.path.basename(FourD_File)
+ file_name=os.path.basename(FourD_File) 
  if not glob.glob(FourD_File.replace('4D2','crop')):
+  print(FourD_File)
   mask_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
   date_name=mask_name.split('_RS_')[0]
   date_name='20'+date_name[-2:]+date_name[2:4]+date_name[0:2]

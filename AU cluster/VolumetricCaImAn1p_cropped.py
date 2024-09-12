@@ -29,10 +29,10 @@ c, dview, n_processes = cm.cluster.setup_cluster(backend='local', n_processes=n_
 
 fnames=[os.path.normpath(sys.argv[1])]
 print(fnames[0])
-FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
+FourD_File = glob.glob(os.path.join(fnames[0],'*_4D2.tif_4D_cropped'))
 print(FourD_File)
 
-if glob.glob(FourD_File[0].replace('.tif','_new.hdf5')):
+if glob.glob(FourD_File[0].replace('.tif','.hdf5')):
  print("Folder is done")
  exit()
 
@@ -93,15 +93,15 @@ images = np.reshape(Yr.T, [T] + list(dims), order='F')
 rf = 25  # half-size of the patches in pixels. rf=25, patches are 50x50
 stride = 10  # amount of overlap between the patches in pixels
 K = 100  # number of neurons expected per patch
-gSig = [2, 2, 1]  # expected half size of neurons
+gSig = [3, 3, 2]  # expected half size of neurons
 merge_thr = 0.8  # merging threshold, max correlation allowed
 p = 1  # order of the autoregressive system
-tsub = 1            # downsampling factor in time for initialization,
+tsub = 2            # downsampling factor in time for initialization,
 ssub = 1            # downsampling factor in space for initialization,
-min_pnr = 2        # min peak to noise ration from PNR image
-ssub_B = 5          # additional downsampling factor in space for background
+min_pnr = 3        # min peak to noise ration from PNR image
+ssub_B = 3          # additional downsampling factor in space for background
 ring_size_factor = 1.4  # radius of ring is gSiz*ring_size_factor
-rval_thr = 0.7   # accept components with space correlation threshold or higher
+rval_thr = 0.6   # accept components with space correlation threshold or higher
 print('set')
 
 opts = cnmf.params.CNMFParams(params_dict={
@@ -111,7 +111,7 @@ opts = cnmf.params.CNMFParams(params_dict={
                                 'p': p,
                                 'tsub': tsub,
                                 'ssub': ssub,                                
-                                'use_cnn':True,                                
+                                'use_cnn':False,                                
                                 'only_init': True,    # set it to True to run CNMF-E                                                                
                                 'method_deconvolution': 'oasis',       # could use 'cvxpy' alternatively        
                                 'update_background_components': True,                                
@@ -130,7 +130,7 @@ cnm = cnmf.CNMF(n_processes, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=d
 cnm = cnm.fit(images)
 
 min_SNR = 2            # adaptive way to set threshold on the transient size
-r_values_min = 0.6    # threshold on space consistency (if you lower more components
+r_values_min = 0.7    # threshold on space consistency (if you lower more components
 #                        will be accepted, potentially with worst quality)
 cnm.params.set('quality', {'min_SNR': min_SNR,'rval_thr': r_values_min,'use_cnn': False})
 cnm.estimates.evaluate_components(images, cnm.params, dview=dview)
@@ -143,7 +143,7 @@ try:
     cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
 except:
     pass
-cnm.save(FourD_File[0].replace('.tif','_new.hdf5'))
+cnm.save(FourD_File[0]+'.hdf5')
 cnm2 = cnm.refit(images, dview=dview)
 cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
 
@@ -151,6 +151,6 @@ print(' ***** ')
 print(f"Number of total components: {len(cnm2.estimates.C)}")
 print(f"Number of accepted components: {len(cnm2.estimates.idx_components)}")
 
-cnm2.save(FourD_File[0].replace('.tif','b_new.hdf5'))
+cnm2.save(FourD_File[0]+'b.hdf5')
 
 cm.stop_server(dview=dview)

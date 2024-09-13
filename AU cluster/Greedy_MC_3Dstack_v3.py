@@ -150,7 +150,7 @@ img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*.tif')
 file_name=os.path.basename(tif_file_folder)
 if file_name=='' or os.path.isdir(file_name):
  file_name=os.path.basename(os.path.dirname(tif_file_folder))
-mask_name=file_name.split('_range')[0]+'_template.tif'
+mask_name=tif_file_folder+file_name.split('_range')[0]+'_template.tif'
 mask_check=tifffile.imread(mask_name)
 if len(mask_check.shape)==2:
  dims=mask_check.shape 

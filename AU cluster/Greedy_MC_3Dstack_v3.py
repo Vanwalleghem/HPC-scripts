@@ -103,8 +103,9 @@ def MakeListAndHyperstack(tif_file_folder):
     
 def FindTemplate(tif_file_folder,number_of_frames_to_check=50):
     new_dir=tif_file_folder+'/3Dreg'
-    tif_list_time=glob.glob(new_dir+'*_time*.tif')
+    tif_list_time=sorted(glob.glob(new_dir+'*_time*.tif'))
     for idx_nb in range(0,number_of_frames_to_check):
+        file = tif_list_time[idx_nb]
         if idx_nb==0:
             temp=io.imread(file,plugin='pil')
         else:

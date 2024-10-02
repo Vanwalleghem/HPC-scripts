@@ -9,7 +9,6 @@ import numpy as np
 import nibabel as nib
 from scipy import signal
 import gc
-import re
 
 def is_file_empty(file_path):
     """ Check if file is empty by confirming if its size is 0 bytes"""
@@ -164,14 +163,14 @@ if len(mask_check.shape)==2:
   fixed_mask[i,:,:]=mask_check
  tifffile.imwrite(mask_name,fixed_mask.astype(np.uint16))
 
-#template_name=FindTemplate(tif_file_folder)
-template_name=img_seq_list[0]
+template_name=FindTemplate(tif_file_folder)
 
 for img_name in img_seq_list:
  Register_single_image(img_name,template_name,mask_name)
  print(img_name)
 
 MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped.nii.gz')    
+MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]
 print(tif_file_folder+' '+str(len(MC_img_list)))    
 f = open(tif_file_folder+'/ListOfFailedFiles.txt','w')
 file_name=os.path.basename(os.path.normpath(tif_file_folder))
@@ -198,9 +197,7 @@ if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'
    img_temp=img_temp.get_fdata(dtype='float16')    
   img_temp=np.squeeze(np.asarray(img_temp,dtype='uint16')).transpose()
   C1frames[img_nb,:,:,:]=img_temp 
- tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D.tif',C1frames)
- tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D_MaxZ.tif',np.max(C1frames,axis=1))
- tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D_MeanT.tif',np.mean(C1frames,axis=0))
+ tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D.tif',C1frames) 
  print(tif_file_folder + 'is done')
 else:
  test=[x.split('_Warped.nii.gz')[0] for x in MC_img_list]

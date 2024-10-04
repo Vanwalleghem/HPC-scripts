@@ -169,7 +169,7 @@ template_name=img_seq_list[0]
 
 for img_name in img_seq_list:
  Register_single_image(img_name,template_name,mask_name)
- print(img_name)
+ #print(img_name)
 
 MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped.nii.gz')    
 print(tif_file_folder+' '+str(len(MC_img_list)))    
@@ -188,7 +188,7 @@ if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'
  base_img=np.squeeze(np.asarray(base_img.get_fdata(dtype='float16'),dtype='uint16')).transpose()        
  C1frames=np.zeros((int(len(MC_img_list)),TrueSlices,base_img.shape[1],base_img.shape[2]), dtype='uint16')
  for img_nb,C2_name in enumerate(MC_img_list):    
-  img_nb=int( re.search('_power.+_(\d+)\.tif',C2_name).group(1)) 
+  img_nb=int( re.search('_power.+_time(\d+)\.tif.',C2_name).group(1)) 
   try:
    img_temp=nib.load(C2_name)
    img_temp=img_temp.get_fdata(dtype='float16')

@@ -40,8 +40,25 @@ def RegAndWarp_image_Twice(Mov_name,template_name,Mask_name):
     call(job_string,shell=True)
     return
     
-Txt_files=sorted(glob.glob("/faststorage/project/FUNCT_ENS/data/ToCheck/*.txt")) #May want to not make this hardcoded
 base_folder_to_search='/faststorage/project/FUNCT_ENS/data/'                       #May want to not make this hardcoded
+folder_list=glob.glob(base_folder_to_search+'**/3Dreg/', recursive=True)
+for folder_tocheck in folder_list:
+    Warped_files=glob.glob(folder_tocheck+'/*Warped2*')
+    Size_Warped_files=[]
+    for Warped_file in Warped_files:
+        Size_Warped_files.append(os.path.getsize(Warped_file))
+    Warped_files=np.asarray(Warped_files)
+    Size_Warped_files=np.asarray(Size_Warped_files)
+    Small_files=Warped_files[Size_Warped_files<0.5*Size_Warped_files.max()]    
+    if Small_files.size>0:
+        for file in Small_files:
+            folder=os.path.dirname(file)
+            mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(folder).split('_range')[0]+'_template.tif'
+            RegAndWarp_image_Twice(file.split('_Warped2.nii.gz')[0],os.path.join(os.path.dirname(file),'template.tif'),mask_name)
+    else:
+        print('all good for this folder')
+
+
 for txt_file in Txt_files:
     FramesToFix=[]
     with open(txt_file,'r') as the_file:

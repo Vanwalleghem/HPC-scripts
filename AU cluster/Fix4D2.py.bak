@@ -56,11 +56,8 @@ for txt_file in Txt_files:
     tif_file_folder=os.path.join(tif_file_folder,'3Dreg/')    
     for frame in FramesToFix:        
         frame_files=glob.glob(os.path.join(tif_file_folder,os.path.basename(os.path.normpath(txt_file)).split('_Max')[0]+'_'+frame+'*.tif'))
-        if  os.path.getmtime(frame_files[0]+'_Warped2.nii.gz')<os.path.getmtime(txt_file):
-            Warp_image_Twice(frame_files[0]) #Should always be the .tif file, but should add test for this to be sure
-            tif_volume=nib.load(frame_files[0]+'_Warped2.nii.gz')
-            tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
-            memmap_volume[int(frame),:,:,:]=tif_volume
-        else:
-            print('file processed')
+        Warp_image_Twice(frame_files[0]) #Should always be the .tif file, but should add test for this to be sure
+        tif_volume=nib.load(frame_files[0]+'_Warped2.nii.gz')
+        tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
+        memmap_volume[int(frame),:,:,:]=tif_volume
     memmap_volume.flush()

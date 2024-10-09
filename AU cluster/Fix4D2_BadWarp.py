@@ -15,8 +15,8 @@ def Warp_image_Twice(Mov_name):
     job_string = "greedy -d 3 -rf FixImg -rm MovImg_Warped.nii.gz MovImg_Warped2.nii.gz -r OutImg_Greedy2.nii.gz"
     job_string = job_string.replace('OutImg',Mov_name).replace('FixImg',Mov_name).replace('MovImg',Mov_name)
     call(job_string,shell=True)
-    
-    
+
+
 def RegAndWarp_image_Twice(Mov_name,template_name,Mask_name):
     Warping_matrix = Mov_name.replace('.tif','_Greedy.nii.gz')
     Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')    
@@ -39,28 +39,30 @@ def RegAndWarp_image_Twice(Mov_name,template_name,Mask_name):
     job_string = job_string.replace('OutImg',Mov_name).replace('FixImg',Mov_name).replace('MovImg',Mov_name)
     call(job_string,shell=True)
     return
-    
-Txt_files=sorted(glob.glob("/faststorage/project/FUNCT_ENS/data/ToCheck/*.txt")) #May want to not make this hardcoded
+
 base_folder_to_search='/faststorage/project/FUNCT_ENS/data/'                       #May want to not make this hardcoded
-for txt_file in Txt_files:
-    FramesToFix=[]
-    with open(txt_file,'r') as the_file:
-        while line := the_file.readline():
-            FramesToFix.append(line.rstrip())
-    FramesToFix.pop(0) #Removes the descriptive line
-    file_name=os.path.basename(os.path.normpath(txt_file)).split('_Max')[0]    
-    tif_file_folder=os.path.normpath(glob.glob(base_folder_to_search+'**/'+os.path.basename(os.path.normpath(txt_file)).split('_Max')[0]+'/', recursive=True)[0]) #looks for where the files are
-    tif_4D_name=os.path.join(tif_file_folder,file_name+'_4D2.tif')
-    memmap_volume = tifffile.memmap(tif_4D_name) #memmap the 4D2 tif file
-    #The files are actually in the subfolder 3Dreg
-    tif_file_folder=os.path.join(tif_file_folder,'3Dreg/')    
-    for frame in FramesToFix:        
-        frame_files=glob.glob(os.path.join(tif_file_folder,os.path.basename(os.path.normpath(txt_file)).split('_Max')[0]+'_'+frame+'*.tif'))
-        if  os.path.getmtime(frame_files[0]+'_Warped2.nii.gz')<os.path.getmtime(txt_file):
-            Warp_image_Twice(frame_files[0]) #Should always be the .tif file, but should add test for this to be sure
-            tif_volume=nib.load(frame_files[0]+'_Warped2.nii.gz')
+folder_list=glob.glob(base_folder_to_search+'**/3Dreg/', recursive=True)
+for folder_tocheck in folder_list:
+    Warped_files=glob.glob(folder_tocheck+'/*Warped2*')
+    Size_Warped_files=[]
+    for Warped_file in Warped_files:
+        Size_Warped_files.append(os.path.getsize(Warped_file))
+    Warped_files=np.asarray(Warped_files)
+    Size_Warped_files=np.asarray(Size_Warped_files)
+    Small_files=Warped_files[Size_Warped_files<0.5*Size_Warped_files.max()]    
+    if Small_files.size>0:
+        folder=os.path.dirname(os.path.dirname(folder_tocheck))
+        file_name=os.path.basename(os.path.normpath(folder))
+        tif_4D_name=os.path.join(folder,file_name+'_4D2.tif')
+        memmap_volume = tifffile.memmap(tif_4D_name) #memmap the 4D2 tif file
+        for file in Small_files:            
+            mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(folder).split('_range')[0]+'_template.tif'
+            RegAndWarp_image_Twice(file.split('_Warped2.nii.gz')[0],os.path.join(os.path.dirname(file),'template.tif'),mask_name)
+            tif_volume=nib.load(file)
             tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
+            frame=file.split('.tif')[0].split('_')[-1]
             memmap_volume[int(frame),:,:,:]=tif_volume
-        else:
-            print('file processed')
-    memmap_volume.flush()
+        memmap_volume.flush()
+        print(folder_tocheck+' is done')
+    else:
+        print('all good for this folder')

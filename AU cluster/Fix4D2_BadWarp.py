@@ -4,6 +4,7 @@ import tifffile
 import numpy as np
 from subprocess import call
 import nibabel as nib
+import sys
 
 def Warp_image_Twice(Mov_name):
     Warping_matrix = Mov_name.replace('.tif','_Greedy.nii.gz')
@@ -40,7 +41,8 @@ def RegAndWarp_image_Twice(Mov_name,template_name,Mask_name):
     call(job_string,shell=True)
     return
 
-base_folder_to_search='/faststorage/project/FUNCT_ENS/data/'                       #May want to not make this hardcoded
+#base_folder_to_search='/faststorage/project/FUNCT_ENS/data/'                       #May want to not make this hardcoded
+base_folder_to_search=os.path.normpath(str(sys.argv[1]))
 folder_list=glob.glob(base_folder_to_search+'**/3Dreg/', recursive=True)
 for folder_tocheck in folder_list:
     Warped_files=glob.glob(folder_tocheck+'/*Warped2*')
@@ -62,7 +64,7 @@ for folder_tocheck in folder_list:
             tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
             frame=file.split('.tif')[0].split('_')[-1]
             memmap_volume[int(frame),:,:,:]=tif_volume
-        memmap_volume.flush()
+            memmap_volume.flush()
         print(folder_tocheck+' is done')
     else:
         print('all good for this folder')

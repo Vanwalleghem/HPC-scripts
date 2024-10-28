@@ -22,21 +22,32 @@ n_processes=8
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 if 'dview' in locals():
     cm.stop_server(dview=dview)
+
+
 c, dview, n_processes = cm.cluster.setup_cluster(backend='local', n_processes=n_processes, single_thread=False)
 
-fnames=[os.path.normpath(sys.argv[1])]
+tif_folder=os.path.normpath(sys.argv[1])
+fnames=glob.glob(os.path.join(tif_folder,'3Dreg','*.tif'))
+fnames.sort()
 print(fnames[0])
-FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
+FourD_File = glob.glob(os.path.join(tif_folder,'*4D2.tif'))
 print(FourD_File)
 
-if glob.glob(FourD_File[0].replace('.tif','_new.hdf5')):
+if glob.glob(FourD_File[0].replace('.tif','_new_brain.hdf5')):
  print("Folder is done")
  exit()
 
-Y=cm.load(FourD_File[0])
+if not glob.glob(FourD_File[0].replace('4D2.tif','4D_brain.tif')): #Need to convert tif stack into a giant 4D movie
+    Y = cm.load_movie_chain(fnames)
+    Y.save(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
+    print(Y.shape)
+
+brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')
+
+Y=cm.load(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
 if Y.shape[1]<100: #Ensures that the axis order matches the expectation of CaImAn (time, x,y,z)
  Y=np.moveaxis(Y, [3,1],[1,3])
- tifffile.imwrite(FourD_File[0],Y)
+ tifffile.imwrite(brain_file_name,Y)
 
 # dataset dependent parameters
 frate = 2                       # movie frame rate
@@ -66,17 +77,21 @@ mc_dict = {
 
 opts = cnmf.params.CNMFParams(params_dict=mc_dict)
 
+mc = cm.motion_correction.MotionCorrect(fnames, dview=dview, **opts.get_group('motion'))
+mc.motion_correct(save_movie=True)
+fname_new = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
+
 if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
- mc = cm.motion_correction.MotionCorrect(FourD_File[0], dview=dview, **opts.get_group('motion'))
+ mc = cm.motion_correction.MotionCorrect(brain_file_name, dview=dview, **opts.get_group('motion'))
  try:
   mc.motion_correct(save_movie=True)
  except:
   time.sleep(10)
-  if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
-   mc = cm.motion_correction.MotionCorrect(FourD_File[0], dview=dview, **opts.get_group('motion'))
+  if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(brain_file_name).replace('.tif','*.mmap'))):
+   mc = cm.motion_correction.MotionCorrect(brain_file_name, dview=dview, **opts.get_group('motion'))
 
-#if glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
- #filename=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap')))
+#if glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(brain_file_name).replace('.tif','*.mmap'))):
+ #filename=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(brain_file_name).replace('.tif','*.mmap')))
 fname_new = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
 #else:
  #mc.motion_correct(save_movie=True)
@@ -140,7 +155,7 @@ try:
     cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
 except:
     pass
-cnm.save(FourD_File[0].replace('.tif','_new.hdf5'))
+cnm.save(brain_file_name.replace('.tif','_new.hdf5'))
 cnm2 = cnm.refit(images, dview=dview)
 cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
 
@@ -148,6 +163,6 @@ print(' ***** ')
 print(f"Number of total components: {len(cnm2.estimates.C)}")
 print(f"Number of accepted components: {len(cnm2.estimates.idx_components)}")
 
-cnm2.save(FourD_File[0].replace('.tif','b_new.hdf5'))
+cnm2.save(brain_file_name.replace('.tif','b_new.hdf5'))
 
 cm.stop_server(dview=dview)

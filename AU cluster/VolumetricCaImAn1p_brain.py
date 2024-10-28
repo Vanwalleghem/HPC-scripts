@@ -38,8 +38,9 @@ if glob.glob(FourD_File[0].replace('.tif','_new_brain.hdf5')):
  exit()
 
 if not glob.glob(FourD_File[0].replace('4D2.tif','4D_brain.tif')): #Need to convert tif stack into a giant 4D movie
-    Y = cm.load_movie_chain(fnames)
-    Y.save(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
+    #Y = cm.load_movie_chain(fnames) #use way too much memory
+    #Y.save(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
+    
     print(Y.shape)
 
 brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')

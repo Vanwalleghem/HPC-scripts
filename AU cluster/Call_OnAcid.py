@@ -13,13 +13,13 @@ for file in glob.glob(os.path.join(base_folder,'*/')):
 fnames_all.sort()
 
 #Create the job array
-with open('CaImAn_array.sh','w') as the_file:
+with open('OnAcid_array.sh','w') as the_file:
  the_file.write('#!/bin/bash \n')
  the_file.write('#SBATCH --account Opt_Tweezers \n')
  the_file.write('#SBATCH --partition normal \n')
- the_file.write('#SBATCH --mem 300G \n')
+ the_file.write('#SBATCH --mem 200G \n')
  the_file.write('#SBATCH  -c 8 \n') 
- the_file.write('#SBATCH  -t 3-0 \n')
+ the_file.write('#SBATCH  -t 20:0:0 \n')
  the_file.write('#SBATCH  --output=CaImAn_%A_%a.out \n')
  job_string = """#SBATCH --array=1-%s \n""" % (str(len(fnames_all)))
  the_file.write(job_string) 
@@ -31,10 +31,10 @@ with open('CaImAn_array.sh','w') as the_file:
  the_file.write('export OPENBLAS_NUM_THREADS=1\n')
  the_file.write('export VECLIB_MAXIMUM_THREADS=1\n')
  the_file.write('export CAIMAN_TEMP=/faststorage/project/Opt_Tweezers/Temp/\n')
- job_string = 'python ~/VolumetricCaImAn1p_brain.py $filename \n' 
+ job_string = 'python ~/VolumetricCaImAnOnline_brain.py $filename \n' 
  the_file.write(job_string)
 
 
-job_string = """sbatch CaImAn_array.sh""" 
+job_string = """sbatch OnAcid_array.sh""" 
 print(job_string)
 call([job_string],shell=True)

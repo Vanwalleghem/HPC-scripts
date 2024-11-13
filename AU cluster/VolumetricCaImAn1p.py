@@ -21,7 +21,7 @@ try:
 except:
     pass
 
-n_processes=8
+n_processes=4
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 if 'dview' in locals():
     cm.stop_server(dview=dview)
@@ -40,6 +40,8 @@ Y=cm.load(FourD_File[0])
 if Y.shape[1]<100: #Ensures that the axis order matches the expectation of CaImAn (time, x,y,z)
  Y=np.moveaxis(Y, [3,1],[1,3])
  tifffile.imwrite(FourD_File[0],Y)
+ 
+del(Y)
 
 # dataset dependent parameters
 frate = 2                       # movie frame rate
@@ -80,12 +82,12 @@ if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.pa
 
 #if glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
  #filename=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap')))
-fname_new = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
+fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
 #else:
  #mc.motion_correct(save_movie=True)
 
 time.sleep(10)
-Yr, dims, T = cm.load_memmap(fname_new)
+Yr, dims, T = cm.load_memmap(fname_new2)
 images = np.reshape(Yr.T, [T] + list(dims), order='F') 
     #load frames in python format (T x X x Y)
 
@@ -143,7 +145,7 @@ try:
     cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
 except:
     pass
-cnm.save(FourD_File[0].replace('.tif','_new.hdf5'))
+cnm.save(FourD_File[0].replace('.tif','_new2.hdf5'))
 cnm2 = cnm.refit(images, dview=dview)
 cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
 
@@ -151,6 +153,6 @@ print(' ***** ')
 print(f"Number of total components: {len(cnm2.estimates.C)}")
 print(f"Number of accepted components: {len(cnm2.estimates.idx_components)}")
 
-cnm2.save(FourD_File[0].replace('.tif','b_new.hdf5'))
+cnm2.save(FourD_File[0].replace('.tif','b_new2.hdf5'))
 
 cm.stop_server(dview=dview)

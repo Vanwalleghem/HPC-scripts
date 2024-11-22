@@ -15,12 +15,12 @@ fnames_all.sort()
 #Create the job array
 with open('CaImAn_array.sh','w') as the_file:
  the_file.write('#!/bin/bash \n')
- the_file.write('#SBATCH --account FUNCT_ENS \n')
+ the_file.write('#SBATCH --account STUDENT_ENS \n')
  the_file.write('#SBATCH --partition normal \n')
- the_file.write('#SBATCH --mem 200G \n')
- the_file.write('#SBATCH  -c 16 \n') 
+ the_file.write('#SBATCH --mem 80G \n')
+ the_file.write('#SBATCH  -c 4 \n') 
  the_file.write('#SBATCH  -t 20:0:0 \n')
- the_file.write('#SBATCH  --output=CaImAn_%A_%a.out \n')
+ the_file.write('#SBATCH  --output=Crop_RS_data \n')
  job_string = """#SBATCH --array=1-%s \n""" % (str(len(fnames_all)))
  the_file.write(job_string) 
  job_string = 'filename=`ls -d '+base_folder+'/GV_*/ | tail -n +\${SLURM_ARRAY_TASK_ID} | head -1` \n'

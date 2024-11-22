@@ -46,11 +46,11 @@ for FourD_File in FourD_Files:
    img_nb=int( re.search('_power.+_time(\d+)\.tif',C2_name).group(1)) 
    try:
     img_temp=nib.load(C2_name)
-    img_temp=img_temp.get_fdata(dtype='float16')
+    img_temp=img_temp.slicer[max(crop_dims[4]-10,0):min(crop_dims[5]+10,mask_check.shape[1]),max(crop_dims[2]-10,0):min(crop_dims[3]+10,mask_check.shape[1]),:].get_fdata(dtype='float16')
    except:
     break       
-   Y=base_img.slicer[max(crop_dims[4]-10,0):min(crop_dims[5]+10,mask_check.shape[1]),max(crop_dims[2]-10,0):min(crop_dims[3]+10,mask_check.shape[1]),:]
-   Y=np.squeeze(np.asarray(Y.get_fdata(dtype='float16'),dtype='uint16')).transpose()
+   Y=img_temp
+   Y=np.squeeze(np.asarray(Y,dtype='uint16')).transpose()
    C1frames[img_nb,:,:,:]=Y
   tifffile.imwrite(FourD_File.replace('4D2','_4D_cropped'),C1frames)
   print(os.path.dirname(FourD_File) + 'is done')

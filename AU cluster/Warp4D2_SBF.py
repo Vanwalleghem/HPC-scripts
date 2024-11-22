@@ -19,8 +19,8 @@ def Warp_image_Twice(Mov_name):
     
 def Warp_image_second(Mov_name): #Mov_name ends in _Warped.nii.gz
     Warping_matrix2 = Mov_name.replace('_Warped.nii.gz','_Greedy2.nii.gz')
-    job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped -r WarpImg"
-    job_string = job_string.replace('WarpImg',Warping_matrix2).replace('FixImg',Mov_name).replace('MovImg_Warped',Mov_name.replace('_Warped','_Warped2'))
+    job_string = "greedy -d 3 -rf FixImg -rm MovImg MovWarped -r WarpImg"
+    job_string = job_string.replace('WarpImg',Warping_matrix2).replace('FixImg',Mov_name).replace('MovWarped',Mov_name.replace('_Warped','_Warped2')).replace('MovImg',Mov_name)
     call(job_string,shell=True)
 
 tif_file_folder=sys.argv[1]

@@ -1,12 +1,16 @@
-from subprocess import call
-import time
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Jan 23 14:07:34 2023
+
+@author: au691573
+"""
+
 import glob
 import os
 import sys
 import tifffile
 import numpy as np
 import nibabel as nib
-import gc
 import re
 from caiman.source_extraction import cnmf
 from scipy.io import savemat
@@ -39,6 +43,7 @@ for name in img_seq_list:
     C2frames[img_nb,:,:,:]=img_temp
 
 matlab_arrays={}
+FourD_TifFile = glob.glob(os.path.join(tif_file_folder,'*4D2.tif'))
 for slice_nb in range(0,base_img.shape[1]):
   SlicedImg=np.squeeze(C2frames[:,slice_nb,:,:]).transpose()
   caiman_filename=os.path.basename(FourD_TifFile[0]).replace('.tif','_slice'+str(slice_nb+1)+'.tif').replace('.tif','b.hdf5')
@@ -48,12 +53,11 @@ for slice_nb in range(0,base_img.shape[1]):
   Ain=np.reshape(Ain,(dims[3],dims[2],Ain.shape[1]))
   Time_serie=np.zeros((Ain.shape[2],dims[0]))
   for ROI_nb in range(0,Ain.shape[2]):      
-    temp=SlicedImg[:,np.transpose(Ain[:,:,ROI_nb]>0)]      
-    Time_serie[ROI_nb,:]=temp.mean(axis=1)
-
+    temp=SlicedImg[(Ain[:,:,ROI_nb])>0,:]      
+    Time_serie[ROI_nb,:]=temp.mean(axis=0)
   np.save(caiman_filename.replace('b.hdf5','.npy'),Time_serie)    
-  matlab_arrays[str(slice_nb)]=Time_serie
+  matlab_arrays['slice_'+str(slice_nb)]=Time_serie
 
 nib_img=nib.Nifti1Image(C2frames.transpose(),np.eye(4))
-nib.save(C2frames,tif_file_folder+'/'+file_name+'_3DJacob.nii')
+nib.save(nib_img,tif_file_folder+'/'+file_name+'_3DJacob.nii')
 savemat(FourD_File[0].replace('_3DJacob2.tif','.mat'),matlab_arrays)

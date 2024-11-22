@@ -17,7 +17,7 @@ with open('NumpyJacob_array.sh','w') as the_file:
  the_file.write('#!/bin/bash \n')
  the_file.write('#SBATCH --account FUNCT_ENS \n')
  the_file.write('#SBATCH --partition normal \n')
- the_file.write('#SBATCH --mem 64G \n')
+ the_file.write('#SBATCH --mem 128G \n')
  the_file.write('#SBATCH  -c 16 \n') 
  the_file.write('#SBATCH  -t 20:0:0 \n')
  the_file.write('#SBATCH  --output=NumpyJacob_%A_%a.out \n')

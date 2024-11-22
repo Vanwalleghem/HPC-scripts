@@ -30,6 +30,7 @@ tif_file_folder=os.path.normpath(tif_file_folder)
 print(tif_file_folder)
 os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii')
+#Here you need to change the template name to yours
 template_name=tif_file_folder+'/3Dreg/template.tif'
 
 for MovImg in img_seq_list:

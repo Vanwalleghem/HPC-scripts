@@ -43,7 +43,8 @@ def RegAndWarp_image_Twice(Mov_name,template_name,Mask_name):
 
 #base_folder_to_search='/faststorage/project/FUNCT_ENS/data/'                       #May want to not make this hardcoded
 base_folder_to_search=os.path.normpath(str(sys.argv[1]))
-folder_list=glob.glob(base_folder_to_search+'**/3Dreg/', recursive=True)
+folder_list=glob.glob(base_folder_to_search+'/**/3Dreg/', recursive=True)
+print('found '+str(len(folder_list))+' folders in '+base_folder_to_search)
 for folder_tocheck in folder_list:
     Warped_files=glob.glob(folder_tocheck+'/*Warped2*')
     Size_Warped_files=[]

@@ -61,7 +61,7 @@ if frame_dim==0:
   for frame_nb in range(0,number_of_frames):
    if not os.path.exists(os.path.join(data_path,'Warped_tif',os.path.basename(os.path.normpath(fnames[0]))+'_time'+format(frame_nb, '05d')+'.tif')):
     tif_tosave=tif_mem[frame_nb,:,:,:]
-    tifffile.imwrite(os.path.join(data_path,'Warped_tif',os.path.basename(os.path.normpath(fnames[0]))+'_time'+format(frame_nb, '05d')+'.tif'),tif_tosave,bigtiff=True)
+    tifffile.imwrite(os.path.join(data_path,'Warped_tif',os.path.basename(os.path.normpath(fnames[0]))+'_time'+format(frame_nb, '05d')+'.tif'),tif_tosave.transpose((2,0,1)).astype('uint16'),bigtiff=True)
  db['data_path']=os.path.join(data_path,'Warped_tif')
  db['tiff_list']=sorted(glob.glob(os.path.join(data_path,'Warped_tif','*.tif')))
  opsEnd=run_s2p(ops=ops,db=db)

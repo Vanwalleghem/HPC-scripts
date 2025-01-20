@@ -50,19 +50,20 @@ if glob.glob(FourD_File[0].replace('.tif','_new_brain.hdf5')):
  print("Folder is done")
  exit()
 
-brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')
+#brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')
+brain_file_name=FourD_File[0]
 
-if not is_file_empty(brain_file_name): #Need to convert tif stack into a giant 4D movie
+#if not is_file_empty(brain_file_name): #Need to convert tif stack into a giant 4D movie
 #Y = cm.load_movie_chain(brain_file_name)
 #Y.save(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
- temp=tifffile.imread(tif_files[0])
- Y = tifffile.memmap(brain_file_name, dtype='uint16', shape=(1200,temp.shape[1],temp.shape[2],temp.shape[0]))
- print(Y.shape)
- for img_file in tif_files:
-  temp=tifffile.imread(img_file)
-  img_nb=int( re.search('_power.+_time(\d+)\.tif',img_file).group(1))
-  Y[img_nb,:,:,:]=temp.transpose()
- Y.flush()
+ #temp=tifffile.imread(tif_files[0])
+ #Y = tifffile.memmap(brain_file_name, dtype='uint16', shape=(1200,temp.shape[1],temp.shape[2],temp.shape[0]))
+ #print(Y.shape)
+ #for img_file in tif_files:
+  #temp=tifffile.imread(img_file)
+  #img_nb=int( re.search('_power.+_time(\d+)\.tif',img_file).group(1))
+  #Y[img_nb,:,:,:]=temp.transpose()
+ #Y.flush()
 
 
 
@@ -72,7 +73,7 @@ if not is_file_empty(brain_file_name): #Need to convert tif stack into a giant 4
 # Y=np.moveaxis(Y, [3,1],[1,3])
 # tifffile.imwrite(brain_file_name,Y)
 
-del Y
+#del Y
 gc.collect()
 
 # dataset dependent parameters

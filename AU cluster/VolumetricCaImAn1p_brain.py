@@ -1,43 +1,52 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Dec 19 10:14:31 2024
+
+@author: au691573
+"""
+
 import sys
 import os
-import shutil
+#import shutil
 import glob
-import os
+import logging
 import tifffile
 import numpy as np
-import time
 import caiman as cm
 from caiman.source_extraction import cnmf
-from caiman.motion_correction import MotionCorrect
-from caiman.source_extraction.cnmf import params as params
+#from caiman.motion_correction import MotionCorrect
+#from caiman.source_extraction.cnmf import params as params
 import cv2
-from subprocess import call
+#from subprocess import call
+import time
+import datetime
+from pathlib import Path
 opencv=True
-import re
-import gc
+
+def is_non_zero_file(fpath):  
+    return os.path.isfile(fpath) and os.path.getsize(fpath) > 0
 
 try:
-    cv2.setNumThreads(2)
+    cv2.setNumThreads(0)
 except:
     pass
-    
-def is_file_empty(file_path):
- # Check if file exist and it is empty    
- if os.path.exists(file_path):
-  if os.stat(file_path).st_size == 0:
-   return True
-  else:
-   return False
- else:
-  return True 
 
-n_processes=6
-#%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
-if 'dview' in locals():
-    cm.stop_server(dview=dview)
+logger = logging.getLogger("caiman")
+logger.setLevel(logging.DEBUG)
+# Set path to logfile
+current_datetime = datetime.datetime.now().strftime("_%Y%m%d_%H%M%S")
+log_filename = 'CaImAn1p' + current_datetime + '.log'
+log_path = Path(cm.paths.get_tempdir()) / log_filename
+# Done with path stuff
+handler = logging.FileHandler(log_path)
+log_format = logging.Formatter("%(relativeCreated)12d [%(filename)s:%(funcName)10s():%(lineno)s] [%(process)d] %(message)s")
+handler.setFormatter(log_format)
+logger.addHandler(handler)
 
+n_processes=2
+#%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened) 
 
-c, dview, n_processes = cm.cluster.setup_cluster(backend='single', n_processes=n_processes)
+c, dview, n_processes = cm.cluster.setup_cluster(backend='multiprocessing', n_processes=n_processes, single_thread=False)
 
 tif_folder=os.path.normpath(sys.argv[1])
 tif_files=glob.glob(os.path.join(tif_folder,'3Dreg','*.tif'))
@@ -46,16 +55,17 @@ print(tif_files[0])
 FourD_File = glob.glob(os.path.join(tif_folder,'*4D2.tif'))
 print(FourD_File)
 
-if glob.glob(FourD_File[0].replace('.tif','_new_brain.hdf5')):
+OutputFileAppend='_brain'
+
+if glob.glob(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5')):
  print("Folder is done")
  exit()
 
-#brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')
-brain_file_name=FourD_File[0]
+brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')
 
-#if not is_file_empty(brain_file_name): #Need to convert tif stack into a giant 4D movie
-#Y = cm.load_movie_chain(brain_file_name)
-#Y.save(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
+if not is_non_zero_file(brain_file_name): #Need to convert tif stack into a giant 4D movie
+ Y = cm.load_movie_chain(tif_files,is3D=True)
+ Y.save(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
  #temp=tifffile.imread(tif_files[0])
  #Y = tifffile.memmap(brain_file_name, dtype='uint16', shape=(1200,temp.shape[1],temp.shape[2],temp.shape[0]))
  #print(Y.shape)
@@ -73,8 +83,8 @@ brain_file_name=FourD_File[0]
 # Y=np.moveaxis(Y, [3,1],[1,3])
 # tifffile.imwrite(brain_file_name,Y)
 
-#del Y
-gc.collect()
+del Y
+
 
 # dataset dependent parameters
 frate = 2                       # movie frame rate
@@ -104,19 +114,26 @@ mc_dict = {
 
 opts = cnmf.params.CNMFParams(params_dict=mc_dict)
 
-mc = cm.motion_correction.MotionCorrect(brain_file_name, dview=dview, **opts.get_group('motion'))
-mc.motion_correct(save_movie=True)
-fname_new = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
-
-if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
+#if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
+if True:
  mc = cm.motion_correction.MotionCorrect(brain_file_name, dview=dview, **opts.get_group('motion'))
  try:
+  print('1')
   mc.motion_correct(save_movie=True)
+  fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
+  time.sleep(10)
+  Yr, dims, T = cm.load_memmap(fname_new2)
  except:
   time.sleep(10)
-  if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(brain_file_name).replace('.tif','*.mmap'))):
-   mc = cm.motion_correction.MotionCorrect(brain_file_name, dview=dview, **opts.get_group('motion'))
-
+  print('2')
+  #if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
+  mc = cm.motion_correction.MotionCorrect(brain_file_name, dview=dview, **opts.get_group('motion'))
+  mc.motion_correct(save_movie=True)   
+  fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
+  time.sleep(10)
+  Yr, dims, T = cm.load_memmap(fname_new2)
+  
+  
 #if glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(brain_file_name).replace('.tif','*.mmap'))):
  #filename=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(brain_file_name).replace('.tif','*.mmap')))
 fname_new = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
@@ -127,6 +144,12 @@ time.sleep(10)
 Yr, dims, T = cm.load_memmap(fname_new)
 images = np.reshape(Yr.T, [T] + list(dims), order='F') 
     #load frames in python format (T x X x Y)
+    
+del(Yr)
+#%% restart cluster to clean up memory
+cm.stop_server(dview=dview)
+c, dview, n_processes = cm.cluster.setup_cluster(
+    backend='multiprocessing', n_processes=None, single_thread=False)
 
 # set parameters
 rf = 25  # half-size of the patches in pixels. rf=25, patches are 50x50
@@ -182,7 +205,7 @@ try:
     cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
 except:
     pass
-cnm.save(brain_file_name.replace('.tif','_new.hdf5'))
+cnm.save(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5'))
 cnm2 = cnm.refit(images, dview=dview)
 cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
 
@@ -190,6 +213,7 @@ print(' ***** ')
 print(f"Number of total components: {len(cnm2.estimates.C)}")
 print(f"Number of accepted components: {len(cnm2.estimates.idx_components)}")
 
-cnm2.save(brain_file_name.replace('.tif','b_new.hdf5'))
+cnm2.save(FourD_File[0].replace('.tif',OutputFileAppend+'b.hdf5'))
 
 cm.stop_server(dview=dview)
+os.remove(mc.mmap_file[0])

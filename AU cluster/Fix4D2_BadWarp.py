@@ -45,27 +45,55 @@ base_folder_to_search=os.path.normpath(str(sys.argv[1]))
 folder_list=glob.glob(base_folder_to_search+'/**/3Dreg/', recursive=True)
 print('found '+str(len(folder_list))+' folders in '+base_folder_to_search)
 for folder_tocheck in folder_list:
-    Warped_files=glob.glob(folder_tocheck+'/*Warped2*')
+    Warped_files=glob.glob(folder_tocheck+'/*Warped2.nii.gz')
     Size_Warped_files=[]
     for Warped_file in Warped_files:
         Size_Warped_files.append(os.path.getsize(Warped_file))
     Warped_files=np.asarray(Warped_files)
     Size_Warped_files=np.asarray(Size_Warped_files)
-    Small_files=Warped_files[Size_Warped_files<0.5*Size_Warped_files.max()]    
+    try:
+     Small_files=Warped_files[Size_Warped_files<0.5*Size_Warped_files.max()]
+    except:
+     Small_files=np.zeros(0)
+     
+    List_files=sorted(glob.glob(os.path.join(folder_tocheck,'*Warped2*.tif')))
+    List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files]
+    Missing_tifs=sorted(set(range(List_number[0], List_number[-1])) - set(List_number))
     if Small_files.size>0:
         folder=os.path.dirname(os.path.dirname(folder_tocheck))
         file_name=os.path.basename(os.path.normpath(folder))
         tif_4D_name=os.path.join(folder,file_name+'_4D2.tif')
-        memmap_volume = tifffile.memmap(tif_4D_name) #memmap the 4D2 tif file
-        for file in Small_files:            
-            #mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(folder).split('_range')[0]+'_template.tif'
-            mask_name=glob.glob(os.path.join(folder_tocheck,'*TEMPLATE.tif'))[0]
-            RegAndWarp_image_Twice(file.split('_Warped2.nii.gz')[0],os.path.join(os.path.dirname(file),'template.tif'),mask_name)
-            tif_volume=nib.load(file)
+        if glob.glob(tif_4D_name):
+         memmap_volume = tifffile.memmap(tif_4D_name) #memmap the 4D2 tif file         
+        template=sorted(glob.glob(os.path.join(folder_tocheck,'*time*.tif')))[0]
+        mask_name=glob.glob(os.path.join(folder,'*TEMPLATE.tif'))[0]
+        for file_name in Small_files:            
+            #mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(folder).split('_range')[0]+'_template.tif'            
+            #RegAndWarp_image_Twice(file.split('_Warped2.nii.gz')[0],os.path.join(os.path.dirname(file),'template.tif'),mask_name)            
+            RegAndWarp_image_Twice(file_name.split('_Warped2.nii.gz')[0],template,mask_name)
+            tif_volume=nib.load(file_name)
             tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
-            frame=file.split('.tif')[0].split('time')[-1]
-            memmap_volume[int(frame),:,:,:]=tif_volume
-            memmap_volume.flush()
+            tifffile.imwrite(file_name.replace('.nii.gz','.tif'),tif_volume,bigtiff=True)
+            frame=file_name.split('.tif')[0].split('time')[-1]
+            if glob.glob(tif_4D_name):
+             memmap_volume[int(frame),:,:,:]=tif_volume
+             memmap_volume.flush()
         print(folder_tocheck+' is done')
+    elif Missing_tifs:
+      for file_nb in Missing_tifs:
+          file_name=glob.glob(os.path.join(folder_tocheck,'*'+str(file_nb)+'*Warped2.nii.gz'))
+          if not file_name:
+              print('error, the warp for '+file_nb+' is missing')
+              template=sorted(glob.glob(os.path.join(folder_tocheck,'*time*.tif')))[0]
+              mask_name=glob.glob(os.path.join(folder,'*TEMPLATE.tif'))[0]
+              RegAndWarp_image_Twice(os.path.join(folder_tocheck,'*'+str(file_nb)+'*Warped2.nii.gz'),template,mask_name)              
+              tif_volume=nib.load(file_name)
+              tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
+              tifffile.imwrite(file_name.replace('.nii.gz','.tif'),tif_volume,bigtiff=True)  
+          else:
+              file_name=file_name[0]
+              tif_volume=nib.load(file_name)
+              tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
+              tifffile.imwrite(file_name.replace('.nii.gz','.tif'),tif_volume,bigtiff=True)  
     else:
         print('all good for this folder')

@@ -52,12 +52,13 @@ fnames=[os.path.normpath(sys.argv[1])]
 print(fnames[0])
 FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
 print(FourD_File)
+hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
 List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2*.tif')))
 List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files]
 Missing_tifs=sorted(set(range(List_number[0], List_number[-1])) - set(List_number))
 if Missing_tifs:
     for file_nb in Missing_tifs:
-        file_name=glob.glob(os.path.join(fnames[0],'3Dreg/*'+str(file_nb)+'*Warped2.nii.gz'))
+        file_name=glob.glob(os.path.join(fnames[0],'3Dreg/*'+str(file_nb)+'*Warped2.nii.gz'))[0]
         if not file_name:
             print('error, the warp for '+file_nb+' is missing')
         else:
@@ -68,6 +69,15 @@ if FourD_File:
  if glob.glob(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5')):
   print("Folder is done")
   exit()
+
+print('Number of Tifs is: ' + str(len(List_files)))
+if len(List_files)>1200:
+    sys.exit("Too many tif files in: "+fnames[0])
+hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
+if not glob.glob(hdf5_name):
+    cm.load(List_files, is3D=True).save(hdf5_name)
+
+fname2 = [hdf5_name]
 
 # dataset dependent parameters
 frate = 2                       # movie frame rate
@@ -101,7 +111,7 @@ opts = cnmf.params.CNMFParams(params_dict=mc_dict)
 
 #if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
 if True:
- mc = cm.motion_correction.MotionCorrect(List_files, dview=dview, **opts.get_group('motion'))
+ mc = cm.motion_correction.MotionCorrect(fname2, dview=dview, **opts.get_group('motion'))
  try:
   print('1')
   mc.motion_correct(save_movie=True)
@@ -111,7 +121,7 @@ if True:
   time.sleep(10)
   print('2')
   #if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
-  mc = cm.motion_correction.MotionCorrect(List_files, dview=dview, **opts.get_group('motion'))
+  mc = cm.motion_correction.MotionCorrect(fname2, dview=dview, **opts.get_group('motion'))
   mc.motion_correct(save_movie=True)   
   fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
   Yr, dims, T = cm.load_memmap(fname_new2)

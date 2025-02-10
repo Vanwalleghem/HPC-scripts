@@ -44,7 +44,7 @@ logger.addHandler(handler)
 n_processes=2
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 
-OutputFileAppend='_Tifflist'
+OutputFileAppend='_TifflistBrain'
 
 c, dview, n_processes = cm.cluster.setup_cluster(backend='multiprocessing', n_processes=n_processes, single_thread=False)
 
@@ -52,26 +52,18 @@ fnames=[os.path.normpath(sys.argv[1])]
 print(fnames[0])
 FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
 print(FourD_File)
-hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
-List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*RS*Warped2*.tif')))
+hdf5_name=FourD_File[0].replace('.tif','_movie_brain.hdf5')
+List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*time*.tif')))
+List_files=list(set(List_files) - set(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped*.tif'))))
+
 if List_files:
     List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files]
 else:
-    List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2.nii.gz')))
-    if not List_files:
-        sys.exit("Folder was not processed by Greedy")
-    else:
-        List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files]
+    sys.exit("Issues with list of tiff")
 Missing_tifs=sorted(set(range(List_number[0], List_number[-1])) - set(List_number))
 if Missing_tifs:
-    for file_nb in Missing_tifs:
-        file_name=glob.glob(os.path.join(fnames[0],'3Dreg/*'+str(file_nb)+'*Warped2.nii.gz'))[0]
-        if not file_name:
-            print('error, the warp for '+file_nb+' is missing')
-        else:
-            tif_volume=nib.load(file_name)
-            tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
-            tifffile.imwrite(file_name.replace('.nii.gz','.tif'),tif_volume,bigtiff=True)  
+    print(Missing_tifs)
+
 if FourD_File:
  if glob.glob(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5')):
   print("Folder is done")
@@ -80,7 +72,7 @@ if FourD_File:
 print('Number of Tifs is: ' + str(len(List_files)))
 if len(List_files)>1200:
     sys.exit("Too many tif files in: "+fnames[0])
-hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
+
 if not glob.glob(hdf5_name):
     cm.load(List_files, is3D=True).save(hdf5_name)
 

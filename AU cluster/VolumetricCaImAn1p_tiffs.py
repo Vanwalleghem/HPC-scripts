@@ -54,14 +54,7 @@ FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
 print(FourD_File)
 hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
 List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*RS*Warped2*.tif')))
-if List_files:
-    List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files]
-else:
-    List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2.nii.gz')))
-    if not List_files:
-        sys.exit("Folder was not processed by Greedy")
-    else:
-        List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files]
+List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files]
 Missing_tifs=sorted(set(range(List_number[0], List_number[-1])) - set(List_number))
 if Missing_tifs:
     for file_nb in Missing_tifs:

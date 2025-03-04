@@ -34,7 +34,7 @@ def Register_single_image_noMask_SecondPass(Mov_name,template_name):
 def Register_single_image_ThirdPass(Mov_name,template_name):        
     output_name = Mov_name.replace('_Warped2.nii.gz','_Greedy3')    
     if is_file_empty(output_name+'.nii.gz'):
-        job_string = "greedy -d 3 -o OutImg.nii -i FixImg MovImg -sv -n 200x100x50 -e 0.15 -m WNCC 2x2x2"
+        job_string = "greedy -d 3 -o OutImg.nii -i FixImg MovImg -sv -n 200x100x50 -e 0.15 -m NCC 2x2x2"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)          
     output_image = Mov_name.replace('_Warped2.nii.gz','_Warped3')
@@ -123,6 +123,7 @@ def MakeListAndHyperstack(tif_file_folder):
     return(tif_list)
 
 tif_file_folder=sys.argv[1]
+tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
 print(tif_file_folder)
 #Hardcoding this for now
 #tif_file_folder=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/data/**/',tif_file_folder)+'/',recursive=True)[0]
@@ -132,6 +133,7 @@ tif_file_folder=os.path.normpath(tif_file_folder)
 #os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
 template_name=tif_file_folder+'/3Dreg/template.tif'
+print(tif_file_folder+' '+str(len(img_seq_list)))
 #mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(tif_file_folder).split('_range')[0]+'_template.tif'
 for img_name in img_seq_list:
  Register_single_image_ThirdPass(img_name,template_name)
@@ -139,7 +141,7 @@ for img_name in img_seq_list:
 
 MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped2.nii.gz')    
 #MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]
-print(tif_file_folder+' '+str(len(MC_img_list)))    
+print(tif_file_folder+' '+str(len(MC_img_list)))
 #f = open(tif_file_folder+'/ListOfFailedFiles.txt','w')
 #file_name=os.path.basename(os.path.normpath(tif_file_folder))
 #if len(MC_img_list)==1200:

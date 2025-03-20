@@ -2,10 +2,6 @@ from subprocess import call
 import glob
 import os
 import sys
-import tifffile
-import numpy as np
-import nibabel as nib
-import re
 
 tif_file_folder=sys.argv[1]
 tif_file_folder=os.path.normpath(tif_file_folder)
@@ -48,21 +44,3 @@ for img_name in img_seq_list:
     #Compute the jacobian determinant of all the warps
     job_string = "CreateJacobianDeterminantImage 3 "+output_name+" "+Jacob_name+" 1 0"    
     call([job_string],shell=True)
- 
-file_name=os.path.basename(os.path.normpath(tif_file_folder))
-if not os.path.exists(tif_file_folder+'/'+file_name+'_3DJacob2.tif'):
-  base_img=nib.load(img_seq_list[0])
-  base_img=np.squeeze(np.asarray(base_img.get_fdata(),dtype='float32')).transpose()
-  range2=int(file_name.split('range')[-1].split('_')[0])
-  step=int(file_name.split('step')[-1].split('_')[0])
-  TrueSlices=int((range2/step)+1);
-  C2frames=np.zeros((int(len(img_seq_list)),base_img.shape[1],base_img.shape[2],base_img.shape[3]))
-  for name in img_seq_list:       
-      output_name = name.split('_Greedy.nii.gz')[0]+'_Jacobian2.nii.gz'
-      img_nb=int( re.search('_(\\d+)_Greedy.nii.gz',name).group(1)) 
-      img_temp=nib.load(output_name)
-      img_temp=img_temp.get_fdata()    
-      img_temp=np.squeeze(np.asarray(img_temp)).transpose()
-      C2frames[img_nb,:,:,:]=img_temp
-  
-  tifffile.imsave(tif_file_folder+'/'+file_name+'_3DJacob2.tif',C2frames)

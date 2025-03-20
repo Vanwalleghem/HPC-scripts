@@ -1,5 +1,4 @@
 from subprocess import call
-import time
 import glob
 import os
 import sys
@@ -8,7 +7,7 @@ fnames_all =[]
 folder=str(sys.argv[1])
 
 base_folder=folder # folder containing the demo files
-for file in glob.glob(os.path.join(base_folder,'GV*/')): 
+for file in glob.glob(os.path.join(base_folder,'*/')): 
  fnames_all.append(file)
 fnames_all.sort()
 

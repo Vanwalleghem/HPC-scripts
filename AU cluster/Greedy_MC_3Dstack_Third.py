@@ -22,24 +22,24 @@ def is_file_empty(file_path):
 def Register_single_image_noMask_SecondPass(Mov_name,template_name):        
     output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2')    
     if is_file_empty(output_name+'.nii.gz'):
-        job_string = "greedy -d 3 -o OutImg.nii -i FixImg MovImg -sv -n 200x100x50 -e 0.25 -m NCC 3x3x3"
+        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.25 -m NCC 3x3x3"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)          
     output_image = Mov_name.replace('_Warped.nii.gz','_Warped2')
     if is_file_empty(output_image+'.nii.gz'):    
-        job_string = "greedy -d 3 -rf FixImg -rm MovImg OutImg.nii -r "+output_name+'.nii.gz'
+        job_string = "greedy -d 3 -rf FixImg -rm MovImg OutImg.nii.gz -r "+output_name+'.nii.gz'
         job_string = job_string.replace('OutImg',output_image).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)
         
 def Register_single_image_ThirdPass(Mov_name,template_name):        
     output_name = Mov_name.replace('_Warped2.nii.gz','_Greedy3')    
     if is_file_empty(output_name+'.nii.gz'):
-        job_string = "greedy -d 3 -o OutImg.nii -i FixImg MovImg -sv -n 200x100x50 -e 0.15 -m NCC 2x2x2"
+        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.15 -m NCC 2x2x2"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)          
     output_image = Mov_name.replace('_Warped2.nii.gz','_Warped3')
     if is_file_empty(output_image+'.nii.gz'):    
-        job_string = "greedy -d 3 -rf FixImg -rm MovImg OutImg.nii -r "+output_name+'.nii.gz'
+        job_string = "greedy -d 3 -rf FixImg -rm MovImg OutImg.nii.gz -r "+output_name+'.nii.gz'
         job_string = job_string.replace('OutImg',output_image).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)
     
@@ -53,10 +53,10 @@ def Register_single_image(Mov_name,template_name,Mask_name):
         job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
         call([job_string],shell=True)  
         print(job_string)
-        job_string = "greedy -d 3 -float -o OutImg.nii -i FixImg MovImg -gm MaskImg -it Affine_name -n 100x50x20 -e 0.25 -m NCC 2x2x2"
+        job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 100x50x20 -e 0.25 -m NCC 2x2x2"
         job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
         call([job_string],shell=True)  
-        job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii -r OutImg.nii Affine_name"
+        job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"
         job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
         call([job_string],shell=True)
 
@@ -67,10 +67,10 @@ def Register_single_image_forced(Mov_name,template_name,Mask_name):
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
     print(job_string)
-    job_string = "greedy -d 3 -float -o OutImg.nii -i FixImg MovImg -gm MaskImg -it Affine_name -n 100x50x20 -e 0.25 -m NCC 2x2x2"
+    job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 100x50x20 -e 0.25 -m NCC 2x2x2"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
-    job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii -r OutImg.nii Affine_name"
+    job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)
 
@@ -124,7 +124,8 @@ def MakeListAndHyperstack(tif_file_folder):
 
 tif_file_folder=sys.argv[1]
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
-print(tif_file_folder)
+raw_string = r"{}".format(tif_file_folder)
+print(raw_string)
 #Hardcoding this for now
 #tif_file_folder=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/data/**/',tif_file_folder)+'/',recursive=True)[0]
 #paths = [line for line in subprocess.check_output("find /faststorage/project/FUNCT_ENS/data/ -type d -iname '"+tif_file_folder+"'", shell=True).splitlines()]
@@ -133,7 +134,7 @@ tif_file_folder=os.path.normpath(tif_file_folder)
 #os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
 template_name=tif_file_folder+'/3Dreg/template.tif'
-print(tif_file_folder+' '+str(len(img_seq_list)))
+print(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz')+' '+str(len(img_seq_list)))
 #mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(tif_file_folder).split('_range')[0]+'_template.tif'
 for img_name in img_seq_list:
  Register_single_image_ThirdPass(img_name,template_name)

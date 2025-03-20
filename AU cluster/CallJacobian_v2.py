@@ -1,4 +1,5 @@
 from subprocess import call
+import time
 import glob
 import os
 import sys
@@ -11,7 +12,7 @@ for file in glob.glob(os.path.join(base_folder,'*/')):
 fnames_all.sort()
 
 #Create the job array
-with open('WarpAndJacobian.sh','w') as the_file:
+with open('Jacobian.sh','w') as the_file:
  the_file.write('#!/bin/bash \n')
  the_file.write('#SBATCH --account FUNCT_ENS \n')
  the_file.write('#SBATCH --partition normal \n')
@@ -24,11 +25,11 @@ with open('WarpAndJacobian.sh','w') as the_file:
  job_string = 'filename=`ls -d '+base_folder+'/*/ | tail -n +\\${SLURM_ARRAY_TASK_ID} | head -1` \n'
  the_file.write(job_string) 
  the_file.write('source ~/miniconda3/etc/profile.d/conda.sh\n')
- the_file.write('conda activate myproject \n')
- job_string = 'python ~/WarpJacobianDeterminant_v2.py $filename \n' 
+ the_file.write('conda activate caiman \n')
+ job_string = 'python ~/JacobianDeterminantNumpy_v2.py $filename \n' 
  the_file.write(job_string)
 
 
-job_string = """sbatch WarpAndJacobian.sh""" 
+job_string = """sbatch Jacobian.sh""" 
 print(job_string)
 call([job_string],shell=True)

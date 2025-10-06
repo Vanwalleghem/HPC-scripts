@@ -133,14 +133,19 @@ tif_file_folder=os.path.normpath(tif_file_folder)
 
 #os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
-template_name=tif_file_folder+'/3Dreg/template.tif'
+if os.path.exists(tif_file_folder+'/3Dreg/template.tif')
+    template_name=tif_file_folder+'/3Dreg/template.tif'
+else:
+    file_name=os.path.basename(FourD_File)
+    template_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
+
 print(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz')+' '+str(len(img_seq_list)))
 #mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(tif_file_folder).split('_range')[0]+'_template.tif'
 for img_name in img_seq_list:
  Register_single_image_ThirdPass(img_name,template_name)
  print(img_name)
 
-MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped2.nii.gz')    
+MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped3.nii.gz')    
 #MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]
 print(tif_file_folder+' '+str(len(MC_img_list)))
 #f = open(tif_file_folder+'/ListOfFailedFiles.txt','w')

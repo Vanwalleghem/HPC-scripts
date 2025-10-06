@@ -10,9 +10,8 @@ import os
 #import shutil
 import glob
 import logging
-import tifffile
-import natsort
 import numpy as np
+import natsort
 
 os.environ["CAIMAN_TEMP"]="/faststorage/project/FUNCT_ENS/CaImAnTemp/"
 
@@ -25,7 +24,6 @@ import cv2
 import time
 import datetime
 from pathlib import Path
-import nibabel as nib
 opencv=True
 
 try:
@@ -62,6 +60,7 @@ fnames=[os.path.normpath(tif_file_folder)]
 
 #fnames=[os.path.normpath(sys.argv[1])]
 print(fnames[0])
+#Will need to get rid of the below
 FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
 print(FourD_File)
 hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
@@ -71,7 +70,7 @@ if len(List_files)<1200:
 List_files=[file_name for file_name in List_files if "template" not in file_name]
 #List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files if "template" not in file_name]
 #List_number=[int(file_name.split('_power')[-1].split('_')[1].split('.tif')[0]) for file_name in List_files if "template" not in file_name]
-print('number of warped files : ' + str(len(List_files)))
+print('number of warped2 files : ' + str(len(List_files)))
 List_files=natsort.natsorted(List_files)
 
 #Missing_tifs=sorted(set(range(List_number[0], List_number[-1])) - set(List_number))
@@ -100,7 +99,7 @@ fname2 = [hdf5_name]
 
 # dataset dependent parameters
 frate = 2                       # movie frame rate
-decay_time = 1.6                 # length of a typical transient in seconds
+decay_time = 2                 # length of a typical transient in seconds
 # motion correction parameters
 motion_correct = True    # flag for performing motion correction
 pw_rigid = True         # flag for performing piecewise-rigid motion correction (otherwise just rigid)
@@ -172,16 +171,16 @@ c, dview, n_processes = cm.cluster.setup_cluster(
 rf = 25  # half-size of the patches in pixels. rf=25, patches are 50x50
 stride = 10  # amount of overlap between the patches in pixels
 K = 50  # number of neurons expected per patch
-gSig = [3, 3, 2]  # expected half size of neurons
-merge_thr = 0.95  # merging threshold, max correlation allowed
-p = 1  # order of the autoregressive system
-tsub = 2            # downsampling factor in time for initialization,
+gSig = [4, 4, 2]  # expected half size of neurons
+merge_thr = 0.9  # merging threshold, max correlation allowed
+p = 2  # order of the autoregressive system
+tsub = 1            # downsampling factor in time for initialization,
 ssub = 1            # downsampling factor in space for initialization,
 #min_pnr = 8        # min peak to noise ration from PNR image
 min_pnr = 4        # min peak to noise ration from PNR image
 ssub_B = 5          # additional downsampling factor in space for background
 #min_corr=0.85
-min_corr=0.8
+min_corr=0.7
 ring_size_factor = 1.4  # radius of ring is gSiz*ring_size_factor
 rval_thr = 0.7   # accept components with space correlation threshold or higher
 print('set')
@@ -213,7 +212,7 @@ cnm = cnmf.CNMF(n_processes, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=d
 cnm = cnm.fit(images)
 
 min_SNR = 2            # adaptive way to set threshold on the transient size
-r_values_min = 0.6    # threshold on space consistency (if you lower more components
+r_values_min = 0.7    # threshold on space consistency (if you lower more components
 #                        will be accepted, potentially with worst quality)
 cnm.params.set('quality', {'min_SNR': min_SNR,'rval_thr': r_values_min,'use_cnn': False})
 cnm.estimates.evaluate_components(images, cnm.params, dview=dview)
@@ -222,10 +221,10 @@ print(' ***** ')
 print(f"Number of total components: {len(cnm.estimates.C)}")
 print(f"Number of accepted components: {len(cnm.estimates.idx_components)}")
 
-try:
-    cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
-except:
-    pass
+#try:
+#    cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
+#except:
+#    pass
 cnm.save(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5'))
 cnm2 = cnm.refit(images, dview=dview)
 cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)

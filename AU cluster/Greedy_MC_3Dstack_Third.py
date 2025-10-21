@@ -133,11 +133,15 @@ tif_file_folder=os.path.normpath(tif_file_folder)
 
 #os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
-if os.path.exists(tif_file_folder+'/3Dreg/template.tif')
+if os.path.exists(tif_file_folder+'/3Dreg/template.tif'):
     template_name=tif_file_folder+'/3Dreg/template.tif'
 else:
-    file_name=os.path.basename(FourD_File)
-    template_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
+    file_name=os.path.basename(tif_file_folder)
+    mask_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
+    date_name=mask_name.split('_RS_')[0]
+    date_name='20'+date_name[-2:]+date_name[2:4]+date_name[0:2]
+    template_name=os.path.join(tif_file_folder,'RS_'+date_name+'_'+mask_name.split('_RS_')[1]) 
+    
 
 print(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz')+' '+str(len(img_seq_list)))
 #mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(tif_file_folder).split('_range')[0]+'_template.tif'

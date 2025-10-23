@@ -52,11 +52,21 @@ def Register_single_image(Mov_name,template_name,Mask_name):
 def Register_single_image_forced(Mov_name,template_name,Mask_name):        
     output_name = Mov_name.replace('.tif','_Greedy').replace('3Dreg','3Dreg2')
     Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')
-    job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 200x80x40 -e 0.4 -ia-image-centers -m NCC 3x3x2"
+    file_name=os.path.basename(Mov_name)
+    range2=int(file_name.split('range')[-1].split('_')[0])
+    step=int(file_name.split('step')[-1].split('_')[0])
+    TrueSlices=(range2/step)+1;
+    if TrueSlices >= 16:
+        job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 200x80x40 -e 0.4 -ia-image-centers -m NCC 3x3x2"
+    else:
+        job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 300x100 -e 0.4 -ia-image-centers -m NCC 3x3x2"    
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
     print(job_string)
-    job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 200x80x40 -e 0.4 -m NCC 3x3x2"
+    if TrueSlices >= 16:
+        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 200x80x40 -e 0.4 -m NCC 3x3x2"
+    else:
+        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 300x100 -e 0.4 -m NCC 3x3x2"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
     job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"

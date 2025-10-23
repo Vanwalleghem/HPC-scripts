@@ -26,8 +26,15 @@ def is_file_empty(file_path):
 
 def Register_single_image_noMask_SecondPass(Mov_name,template_name):        
     output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2')    
-    if is_file_empty(output_name+'.nii.gz'):
-        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.25 -m NCC 2x2x2"
+    file_name=os.path.basename(Mov_name)
+    if is_file_empty(output_name+'.nii.gz'):        
+        range2=int(file_name.split('range')[-1].split('_')[0])
+        step=int(file_name.split('step')[-1].split('_')[0])
+        TrueSlices=(range2/step)+1;
+        if TrueSlices >= 16:
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.25 -m NCC 2x2x2"
+        else:
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 300x100 -e 0.25 -m NCC 2x2x2"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)          
     output_image = Mov_name.replace('_Warped.nii.gz','_Warped2')
@@ -144,7 +151,7 @@ MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpa
 #MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]
 print(tif_file_folder+' '+str(len(MC_img_list)))    
 file_name=os.path.basename(os.path.normpath(tif_file_folder))
-if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'_4D2.tif'):
+if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'_4D2_MaxZ.tif'):
  C1_name=MC_img_list[0] 
  range2=int(file_name.split('range')[-1].split('_')[0])
  step=int(file_name.split('step')[-1].split('_')[0])
@@ -152,23 +159,24 @@ if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'
  try:
   base_img=nib.load(C1_name)
  except:
-  Register_single_image_SecondPass(C1_name.replace('_Greedy2.nii.gz',''),template_name,mask_name)
+  Register_single_image_forced(C1_name.replace('_Warped.nii.gz',''),template_name,mask_name)
   base_img=nib.load(C1_name)
- base_img=np.squeeze(np.asarray(base_img.get_fdata(),dtype='uint16')).transpose()        
+ base_img=np.squeeze(np.asarray(base_img.get_fdata(dtype='float16'),dtype='uint16')).transpose()        
  C1frames=np.zeros((int(len(MC_img_list)),TrueSlices,base_img.shape[1],base_img.shape[2]), dtype='uint16')
  for img_nb,C2_name in enumerate(MC_img_list):    
-  img_nb=int( re.search('_power.+_(\d+)\.tif',C2_name).group(1)) 
+  img_nb=int( re.search('_power.+_time(\d+)\.tif.',C2_name).group(1)) 
   try:
    img_temp=nib.load(C2_name)
-   img_temp=img_temp.get_fdata()
+   img_temp=img_temp.get_fdata(dtype='float16')
   except:
-   Register_single_image_SecondPass(C2_name.replace('_Greedy2.nii.gz',''),template_name,mask_name)
+   Register_single_image_forced(C2_name.replace('_Warped.nii.gz',''),template_name,mask_name)
    img_temp=nib.load(C1_name)
-   img_temp=img_temp.get_fdata()    
+   img_temp=img_temp.get_fdata(dtype='float16')    
   img_temp=np.squeeze(np.asarray(img_temp,dtype='uint16')).transpose()
   C1frames[img_nb,:,:,:]=img_temp 
- tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D2.tif',C1frames)
- #nrrd.write(tif_file_folder+'/'+file_name+'_4D.nrrd',C1frames)   
+ #tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D.tif',C1frames)
+ tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D2_MaxZ.tif',np.max(C1frames,axis=1))
+ tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D2_MeanT.tif',np.mean(C1frames,axis=0))
  print(tif_file_folder + 'is done')
 else:
  test=[x.split('_Greedy2.nii.gz')[0] for x in MC_img_list]

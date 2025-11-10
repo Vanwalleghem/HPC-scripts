@@ -6,7 +6,8 @@ import tifffile
 from skimage import io
 import numpy as np
 import gc
-import subprocess
+import nibabel as nib
+import re
 
 def is_file_empty(file_path):
     """ Check if file is empty by confirming if its size is 0 bytes"""
@@ -19,10 +20,29 @@ def is_file_empty(file_path):
     else:
         return True 
 
+def Register_single_image_SecondPass(Mov_name,template_name,Mask_name):        
+ output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2')
+ if is_file_empty(output_name+'.nii.gz'):   
+  job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -n 200x100x50 -e 0.25 -m NCC 2x2x2"
+  job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
+  call([job_string],shell=True)          
+ output_image = Mov_name.replace('_Warped.nii.gz','_Warped2')
+ if is_file_empty(output_name+'.nii.gz'):
+  job_string = "greedy -d 3 -rf FixImg -rm MovImg OutImg.nii.gz -r "+output_name+'.nii.gz'
+  job_string = job_string.replace('OutImg',output_image).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
+  call([job_string],shell=True)
+
 def Register_single_image_noMask_SecondPass(Mov_name,template_name):        
     output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2')    
-    if is_file_empty(output_name+'.nii.gz'):
-        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.25 -m NCC 3x3x3"
+    file_name=os.path.basename(Mov_name)
+    if is_file_empty(output_name+'.nii.gz'):        
+        range2=int(file_name.split('range')[-1].split('_')[0])
+        step=int(file_name.split('step')[-1].split('_')[0])
+        TrueSlices=(range2/step)+1;
+        if TrueSlices >= 16:
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.25 -m NCC 2x2x2"
+        else:
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 300x100 -e 0.25 -m NCC 2x2x2"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)          
     output_image = Mov_name.replace('_Warped.nii.gz','_Warped2')
@@ -49,78 +69,63 @@ def Register_single_image(Mov_name,template_name,Mask_name):
     if not os.path.exists(output_name+'_Greedy_affine.mat') and is_file_empty(output_name+'.nii.gz'):        
         output_name = Mov_name.replace('.tif','_Greedy') 
         Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')
-        job_string = "greedy -d 3 -a -float -o Affine_name -i FixImg MovImg -gm MaskImg -n 100x40x20 -e 0.25 -ia-image-centers -m NCC 2x2x2"
+        file_name=os.path.basename(Mov_name)
+        range2=int(file_name.split('range')[-1].split('_')[0])
+        step=int(file_name.split('step')[-1].split('_')[0])
+        TrueSlices=(range2/step)+1;
+        if TrueSlices >= 16:
+            job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 200x80x40 -e 0.4 -ia-image-centers -m NCC 3x3x2"
+        else:
+            job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 300x100 -e 0.4 -ia-image-centers -m NCC 3x3x2"
         job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
         call([job_string],shell=True)  
         print(job_string)
-        job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 100x50x20 -e 0.25 -m NCC 2x2x2"
+        if TrueSlices >= 16:
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 200x80x40 -e 0.4 -m NCC 3x3x2"
+        else:
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 300x100 -e 0.4 -m NCC 3x3x2"
         job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
         call([job_string],shell=True)  
         job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"
         job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
         call([job_string],shell=True)
-
+        
+def FindTemplate(tif_file_folder,number_of_frames_to_check=50):
+    new_dir=tif_file_folder+'/3Dreg/'
+    tif_list_time=sorted(glob.glob(new_dir+'*_time*.tif'))
+    for idx_nb in range(0,number_of_frames_to_check):
+        file = tif_list_time[idx_nb]
+        if idx_nb==0:
+            temp=io.imread(file,plugin='pil')
+        else:
+            temp=np.concatenate((temp,io.imread(file,plugin='pil')),axis=0)
+    std_movie=np.diff(temp[0:number_of_frames_to_check].reshape([number_of_frames_to_check,temp.shape[1],temp.shape[2]*temp.shape[3]]),axis=-1)
+    idx_template=np.argmin(std_movie,axis=0)
+    return(tif_list_time[idx_template])
+        
 def Register_single_image_forced(Mov_name,template_name,Mask_name):        
-    output_name = Mov_name.replace('.tif','_Greedy') 
+    output_name = Mov_name.replace('.tif','_Greedy').replace('3Dreg','3Dreg2')
     Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')
-    job_string = "greedy -d 3 -a -float -o Affine_name -i FixImg MovImg -gm MaskImg -n 100x40x20 -e 0.25 -ia-image-centers -m NCC 2x2x2"
+    file_name=os.path.basename(Mov_name)
+    range2=int(file_name.split('range')[-1].split('_')[0])
+    step=int(file_name.split('step')[-1].split('_')[0])
+    TrueSlices=(range2/step)+1;
+    if TrueSlices >= 16:
+        job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 200x80x40 -e 0.4 -ia-image-centers -m NCC 3x3x2"
+    else:
+        job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -gm MaskImg -n 300x100 -e 0.4 -ia-image-centers -m NCC 3x3x2"    
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
     print(job_string)
-    job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 100x50x20 -e 0.25 -m NCC 2x2x2"
+    if TrueSlices >= 16:
+        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 200x80x40 -e 0.4 -m NCC 3x3x2"
+    else:
+        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -it Affine_name -n 300x100 -e 0.4 -m NCC 3x3x2"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)  
     job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)
-
-def MakeListAndHyperstack(tif_file_folder):
-    tif_list=glob.glob(tif_file_folder+'/*_Warped.nii.gz')
-    tif_list.sort()
-    if not (os.path.exists(tif_file_folder+'/3Dreg/template.tif') and not is_file_empty(tif_file_folder+'/3Dreg/'+tif_file_folder.split('/')[-2]+'_0.tif')):
-        temp=[]
-        for idx_nb,file in enumerate(tif_list):
-            if idx_nb==0:
-                temp=io.imread(file,plugin='pil')
-            else:
-                temp=np.concatenate((temp,io.imread(file,plugin='pil')),axis=0)
-            
-        file_name=tif_file_folder.split('/')[-1]
-        range2=int(file_name.split('range')[-1].split('_')[0])
-        step=int(file_name.split('step')[-1].split('_')[0])
-        TrueSlices=(range2/step)+1;
-        dims=temp.shape
-        temp=np.reshape(temp,[dims[0]/TrueSlices,TrueSlices,dims[1],dims[2]])
-
-        #Computing the difference between points from frame to frame should give the point with least changes
-        #std_movie=temp[:,0:200].std(axis=(2,3))
-        number_of_frames_to_check=50
-        std_movie=np.diff(temp[0:number_of_frames_to_check].reshape([number_of_frames_to_check,temp.shape[1],temp.shape[2]*temp.shape[3]]),axis=-1)
-        idx_template=np.argmin(std_movie,axis=0)
-        #ignores the 0s and compute the mean index of the lowest changes
-        idx_template=int(idx_template[idx_template>0].ravel().mean())
-
-        #tmp_idx=np.argmin(signal.detrend(std_movie))
-        #mean image of the 3 points surrounding the minimum movement
-        template=temp[idx_template-1:idx_template+2].mean(axis=0)        
-        try:
-            new_dir=tif_file_folder+'/3Dreg'
-            os.mkdir(new_dir)
-        except:
-            print('directory exists')
-            
-        os.chdir(new_dir)
-        template_name=new_dir+'/template.tif'
-        tifffile.imsave(template_name,template.astype(np.uint16))
-        img_seq_list=list()
-         
-        for img_nb in range(0,temp.shape[0]):
-            img_name=new_dir+'/'+tif_file_folder.split('/')[-1]+'_'+str(img_nb)+'.tif'
-            tifffile.imsave(img_name,temp[img_nb].astype(np.uint16))
-            img_seq_list.append(img_name)
-        del temp,std_movie
-        gc.collect()
-    return(tif_list)
 
 tif_file_folder=sys.argv[1]
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
@@ -130,6 +135,38 @@ print(raw_string)
 #tif_file_folder=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/data/**/',tif_file_folder)+'/',recursive=True)[0]
 #paths = [line for line in subprocess.check_output("find /faststorage/project/FUNCT_ENS/data/ -type d -iname '"+tif_file_folder+"'", shell=True).splitlines()]
 tif_file_folder=os.path.normpath(tif_file_folder)
+
+img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii.gz')
+#You need to modify the next two lines to match where your template and masks are
+template_name=tif_file_folder+'/3Dreg/template.tif' 
+mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(tif_file_folder).split('_range')[0]+'_template.tif'
+if not os.path.exists(mask_name):
+ file_name=os.path.basename(img_seq_list[0])
+ mask_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
+ date_name=mask_name.split('_RS_')[0]
+ date_name='20'+date_name[-2:]+date_name[2:4]+date_name[0:2]
+ mask_name=os.path.join(os.path.dirname(tif_file_folder),'RS_'+date_name+'_'+mask_name.split('_RS_')[1])
+
+if not os.path.exists(template_name):
+    temp_file=tifffile.imread(FindTemplate(tif_file_folder))
+    tifffile.imwrite(template_name,temp_file.astype(np.uint16))
+    
+img_seq_list2=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
+
+#First check if the files were warped once, or twice
+if img_seq_list>=1200 and img_seq_list2<1200:
+ for img_name in img_seq_list:
+  if not os.path.exists(img_name.replace('_Warped.nii.gz'),'_Warped2.nii.gz'):
+   Register_single_image_SecondPass(img_name,template_name,mask_name)
+elif glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii'):
+ img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii')
+ call('find '+tif_file_folder+' -type f -name "*.nii" -exec gzip {} -f \;')
+ img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii.gz')
+ for img_name in img_seq_list:
+  if not os.path.exists(img_name.replace('_Warped.nii.gz'),'_Warped2.nii.gz'):
+   Register_single_image_SecondPass(img_name,template_name,mask_name)
+else:
+ tif_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif'))
 
 #os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))

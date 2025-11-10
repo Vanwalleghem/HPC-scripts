@@ -65,8 +65,11 @@ FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
 print(FourD_File)
 hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
 List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped3*.tif')))
+print(os.path.join(fnames[0],'3Dreg/*Warped3*.tif'))
 if len(List_files)<1200:
- List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2*.tif')))
+ #List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2*.tif')))
+ print('not enough warped3.tif files')
+ break 
 List_files=[file_name for file_name in List_files if "template" not in file_name]
 #List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files if "template" not in file_name]
 #List_number=[int(file_name.split('_power')[-1].split('_')[1].split('.tif')[0]) for file_name in List_files if "template" not in file_name]
@@ -90,10 +93,12 @@ if FourD_File:
 
 print('Number of Tifs is: ' + str(len(List_files)))
 if len(List_files)>1200:
-    sys.exit("Too many tif files in: "+fnames[0])
+    List_files=[filename for filename in List_files if "RS" in os.path.basename(filename)]
+    if len(List_files)>1200:
+     sys.exit("Too many tif files in: "+fnames[0])
 hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
-if not glob.glob(hdf5_name):
-    cm.load(List_files, is3D=True).save(hdf5_name)
+#if not glob.glob(hdf5_name):
+cm.load(List_files, is3D=True).save(hdf5_name)
 
 fname2 = [hdf5_name]
 

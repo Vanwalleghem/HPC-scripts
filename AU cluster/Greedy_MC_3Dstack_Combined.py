@@ -5,9 +5,9 @@ import sys
 import tifffile
 from skimage import io
 import numpy as np
-import gc
 import nibabel as nib
 import re
+import natsort
 
 def is_file_empty(file_path):
     """ Check if file is empty by confirming if its size is 0 bytes"""
@@ -21,7 +21,7 @@ def is_file_empty(file_path):
         return True 
 
 def Register_single_image_SecondPass(Mov_name,template_name,Mask_name):        
- output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2')
+ output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2').replace('_Greedy.nii.gz','_Greedy2')
  if is_file_empty(output_name+'.nii.gz'):   
   job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -n 200x100x50 -e 0.25 -m NCC 2x2x2"
   job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
@@ -91,16 +91,26 @@ def Register_single_image(Mov_name,template_name,Mask_name):
         call([job_string],shell=True)
         
 def FindTemplate(tif_file_folder,number_of_frames_to_check=50):
-    new_dir=tif_file_folder+'/3Dreg/'
-    tif_list_time=sorted(glob.glob(new_dir+'*_time*.tif'))
+    new_dir=os.path.join(tif_file_folder,'3Dreg/')
+    tif_list_time=natsort.natsorted(glob.glob(new_dir+'*_time*.tif'))    
     for idx_nb in range(0,number_of_frames_to_check):
         file = tif_list_time[idx_nb]
         if idx_nb==0:
-            temp=io.imread(file,plugin='pil')
+            temp=io.imread(file)
+            dims=temp.shape
+            concat_array=np.zeros((number_of_frames_to_check,)+dims)
+            concat_array[idx_nb,:]=temp
         else:
-            temp=np.concatenate((temp,io.imread(file,plugin='pil')),axis=0)
-    std_movie=np.diff(temp[0:number_of_frames_to_check].reshape([number_of_frames_to_check,temp.shape[1],temp.shape[2]*temp.shape[3]]),axis=-1)
-    idx_template=np.argmin(std_movie,axis=0)
+            #temp=np.stack((temp,io.imread(file)))
+            temp=io.imread(file)
+            if dims==temp.shape:
+             #print(temp2.shape)
+             concat_array[idx_nb,:]=temp    
+            else:
+             concat_array[idx_nb,:]=np.transpose(temp,axes=(2,0,1))
+    std_movie=np.diff(concat_array[0:number_of_frames_to_check,:],axis=0)    
+    max_std=np.max(std_movie,axis=(1,2,3),keepdims=True)    
+    idx_template=np.argmin(max_std)
     return(tif_list_time[idx_template])
         
 def Register_single_image_forced(Mov_name,template_name,Mask_name):        
@@ -130,22 +140,30 @@ def Register_single_image_forced(Mov_name,template_name,Mask_name):
 tif_file_folder=sys.argv[1]
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
 raw_string = r"{}".format(tif_file_folder)
-print(raw_string)
+#print(raw_string)
 #Hardcoding this for now
 #tif_file_folder=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/data/**/',tif_file_folder)+'/',recursive=True)[0]
 #paths = [line for line in subprocess.check_output("find /faststorage/project/FUNCT_ENS/data/ -type d -iname '"+tif_file_folder+"'", shell=True).splitlines()]
 tif_file_folder=os.path.normpath(tif_file_folder)
+print(tif_file_folder)
+img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Greedy.nii.gz'))
+if not img_seq_list:
+ job_string=r'find '+tif_file_folder+r' -type f -name "*.nii" -exec gzip {} -f \;'
+ call([job_string],shell=True)
+ img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Greedy.nii.gz'))
 
-img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii.gz')
+if not img_seq_list:
+    img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif'))
+ 
 #You need to modify the next two lines to match where your template and masks are
-template_name=tif_file_folder+'/3Dreg/template.tif' 
+template_name=os.path.join(tif_file_folder,'3Dreg/template.tif')
 mask_name='/faststorage/project/FUNCT_ENS/TemplateFiles/Done/'+os.path.basename(tif_file_folder).split('_range')[0]+'_template.tif'
 if not os.path.exists(mask_name):
  file_name=os.path.basename(img_seq_list[0])
  mask_name=file_name.split('_range')[0]+'_TEMPLATE.tif'
  date_name=mask_name.split('_RS_')[0]
  date_name='20'+date_name[-2:]+date_name[2:4]+date_name[0:2]
- mask_name=os.path.join(os.path.dirname(tif_file_folder),'RS_'+date_name+'_'+mask_name.split('_RS_')[1])
+ mask_name=os.path.join(os.path.join(tif_file_folder),'RS_'+date_name+'_'+mask_name.split('_RS_')[1])
 
 if not os.path.exists(template_name):
     temp_file=tifffile.imread(FindTemplate(tif_file_folder))
@@ -154,19 +172,40 @@ if not os.path.exists(template_name):
 img_seq_list2=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
 
 #First check if the files were warped once, or twice
-if img_seq_list>=1200 and img_seq_list2<1200:
+if len(img_seq_list)>=1200 and len(img_seq_list2)<1200:
+ print('need to do the second warp')
  for img_name in img_seq_list:
-  if not os.path.exists(img_name.replace('_Warped.nii.gz'),'_Warped2.nii.gz'):
+  if not os.path.exists(img_name.replace('_Greedy.nii.gz','_Warped2.nii.gz')):
+   Mov_name = img_name.replace('_Greedy.nii.gz','.tif')
+   job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"
+   output_name = Mov_name.replace('.tif','_Greedy')
+   Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')
+   job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',mask_name)
+   call([job_string],shell=True)
    Register_single_image_SecondPass(img_name,template_name,mask_name)
-elif glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii'):
- img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii')
- call('find '+tif_file_folder+' -type f -name "*.nii" -exec gzip {} -f \;')
- img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Warped.nii.gz')
+elif glob.glob(tif_file_folder+'/3Dreg/*_Greedy.nii'):
+ print('still some files not zipped')
+ img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Greedy.nii')
+ job_string=r'find '+tif_file_folder+r' -type f -name "*.nii" -exec gzip {} -f \;'
+ call([job_string],shell=True) 
+ img_seq_list=glob.glob(tif_file_folder+'/3Dreg/*_Greedy.nii.gz')
  for img_name in img_seq_list:
-  if not os.path.exists(img_name.replace('_Warped.nii.gz'),'_Warped2.nii.gz'):
+  if not os.path.exists(img_name.replace('_Greedy.nii.gz','_Warped2.nii.gz')):
+   Mov_name = img_name.replace('_Greedy.nii.gz','.tif')
+   job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"
+   output_name = Mov_name.replace('.tif','_Greedy')
+   Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')
+   job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',mask_name)
+   call([job_string],shell=True)
    Register_single_image_SecondPass(img_name,template_name,mask_name)
+elif len(img_seq_list)<1200:
+ print('need to do the first and second warp')
+ tif_list=[x for x in glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif')) if not 'Warped' in x]
+ for img_name in tif_list:
+  Register_single_image(img_name,template_name,mask_name)
+  Register_single_image_SecondPass(img_name.replace('.tif','_Warped.nii.gz'),template_name,mask_name)
 else:
- tif_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif'))
+    print('Folder '+tif_file_folder+' has been warped twice')
 
 #os.chdir(os.path.dirname(tif_file_folder))
 img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))

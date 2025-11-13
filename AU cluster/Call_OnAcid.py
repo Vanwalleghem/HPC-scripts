@@ -20,7 +20,7 @@ with open('OnAcid_array.sh','w') as the_file:
  the_file.write('#SBATCH --mem 200G \n')
  the_file.write('#SBATCH  -c 8 \n') 
  the_file.write('#SBATCH  -t 20:0:0 \n')
- the_file.write('#SBATCH  --output=CaImAn_%A_%a.out \n')
+ the_file.write('#SBATCH  --output=onAcid_%A_%a.out \n')
  job_string = """#SBATCH --array=1-%s \n""" % (str(len(fnames_all)))
  the_file.write(job_string) 
  job_string = 'filename=`ls -d '+base_folder+'/*/ | tail -n +\${SLURM_ARRAY_TASK_ID} | head -1` \n'

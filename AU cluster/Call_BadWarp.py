@@ -14,7 +14,8 @@ with open('BadWarp.sh','w') as the_file:
  the_file.write('#SBATCH  -c 16 \n') 
  the_file.write('#SBATCH  -t 20:0:0 \n')
  the_file.write('#SBATCH  --output=BadWarp_%A_%a.out \n') 
- the_file.write('source ~/miniconda3/etc/profile.d/conda.sh\n')
+ the_file.write('source ~/miniforge3/etc/profile.d/conda.sh\n') 
+ the_file.write('conda init\n')
  the_file.write('conda activate greedy\n') 
  job_string = 'python ~/Fix4D2_BadWarp.py '+folder+'\n' 
  the_file.write(job_string)

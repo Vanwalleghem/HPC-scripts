@@ -10,11 +10,8 @@ import os
 #import shutil
 import glob
 import logging
+import tifffile
 import numpy as np
-import natsort
-
-os.environ["CAIMAN_TEMP"]="/faststorage/project/FUNCT_ENS/CaImAnTemp/"
-
 import caiman as cm
 from caiman.source_extraction import cnmf
 #from caiman.motion_correction import MotionCorrect
@@ -30,8 +27,6 @@ try:
     cv2.setNumThreads(0)
 except:
     pass
-    
-
 
 logger = logging.getLogger("caiman")
 logger.setLevel(logging.DEBUG)
@@ -48,63 +43,32 @@ logger.addHandler(handler)
 n_processes=2
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 
-OutputFileAppend='_Tifflist'
+OutputFileAppend='_LowerThresh'
 
 c, dview, n_processes = cm.cluster.setup_cluster(backend='multiprocessing', n_processes=n_processes, single_thread=False)
 
-tif_file_folder=sys.argv[1]
-tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
-raw_string = r"{}".format(tif_file_folder)
-print(raw_string)
-fnames=[os.path.normpath(tif_file_folder)]
-
-#fnames=[os.path.normpath(sys.argv[1])]
+fnames=[os.path.normpath(sys.argv[1])]
 print(fnames[0])
-#Will need to get rid of the below
 FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
 print(FourD_File)
-hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
-List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped3*.tif')))
-print(os.path.join(fnames[0],'3Dreg/*Warped3*.tif'))
-if len(List_files)<1200:
- #List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2*.tif')))
- print('not enough warped3.tif files')
- exit() 
-List_files=[file_name for file_name in List_files if "template" not in file_name]
-#List_number=[int(file_name.split('time')[1].split('.tif')[0]) for file_name in List_files if "template" not in file_name]
-#List_number=[int(file_name.split('_power')[-1].split('_')[1].split('.tif')[0]) for file_name in List_files if "template" not in file_name]
-print('number of warped2 files : ' + str(len(List_files)))
-List_files=natsort.natsorted(List_files)
 
-#Missing_tifs=sorted(set(range(List_number[0], List_number[-1])) - set(List_number))
-#if Missing_tifs:
-#    for file_nb in Missing_tifs:
-#        file_name=glob.glob(os.path.join(fnames[0],'3Dreg/*'+str(file_nb)+'*Warped2.nii.gz'))[0]
-#        if not file_name:
-#            print('error, the warp for '+file_nb+' is missing')
-#        else:
-#            tif_volume=nib.load(file_name)
-#            tif_volume=np.asarray(tif_volume.get_fdata(),dtype='uint16')
-#            tifffile.imwrite(file_name.replace('.nii.gz','.tif'),tif_volume,bigtiff=True)  
-if FourD_File:
- if glob.glob(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5')):
-  print("Folder is done")
-  exit()
+if glob.glob(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5')):
+ print("Folder is done")
+ exit()
 
-print('Number of Tifs is: ' + str(len(List_files)))
-if len(List_files)>1200:
-    List_files=[filename for filename in List_files if "RS" in os.path.basename(filename)]
-    if len(List_files)>1200:
-     sys.exit("Too many tif files in: "+fnames[0])
-hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
-#if not glob.glob(hdf5_name):
-cm.load(List_files, is3D=True).save(hdf5_name)
-
-fname2 = [hdf5_name]
+Y=cm.load(FourD_File[0])
+if Y.shape[1]<100: #Ensures that the axis order matches the expectation of CaImAn (time, x,y,z)
+ Y=np.moveaxis(Y, [3,1],[1,3])
+ tifffile.imwrite(FourD_File[0],Y)
+ 
+if Y.dtype is not np.uint16: #Ensures that the movie is uint16 
+ tifffile.imwrite(FourD_File[0],Y.astype(np.uint16))
+ 
+del(Y)
 
 # dataset dependent parameters
 frate = 2                       # movie frame rate
-decay_time = 2                 # length of a typical transient in seconds
+decay_time = 1.6                 # length of a typical transient in seconds
 # motion correction parameters
 motion_correct = True    # flag for performing motion correction
 pw_rigid = True         # flag for performing piecewise-rigid motion correction (otherwise just rigid)
@@ -134,7 +98,7 @@ opts = cnmf.params.CNMFParams(params_dict=mc_dict)
 
 #if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
 if True:
- mc = cm.motion_correction.MotionCorrect(fname2, dview=dview, **opts.get_group('motion'))
+ mc = cm.motion_correction.MotionCorrect(FourD_File[0], dview=dview, **opts.get_group('motion'))
  try:
   print('1')
   mc.motion_correct(save_movie=True)
@@ -144,7 +108,7 @@ if True:
   time.sleep(10)
   print('2')
   #if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
-  mc = cm.motion_correction.MotionCorrect(fname2, dview=dview, **opts.get_group('motion'))
+  mc = cm.motion_correction.MotionCorrect(FourD_File[0], dview=dview, **opts.get_group('motion'))
   mc.motion_correct(save_movie=True)   
   fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_', order='C',border_to_0=0, dview=dview) # exclude borders
   Yr, dims, T = cm.load_memmap(fname_new2)
@@ -175,11 +139,11 @@ c, dview, n_processes = cm.cluster.setup_cluster(
 # set parameters
 rf = 25  # half-size of the patches in pixels. rf=25, patches are 50x50
 stride = 10  # amount of overlap between the patches in pixels
-K = 50  # number of neurons expected per patch
-gSig = [4, 4, 2]  # expected half size of neurons
+K = 100  # number of neurons expected per patch
+gSig = [3, 3, 2]  # expected half size of neurons
 merge_thr = 0.9  # merging threshold, max correlation allowed
-p = 2  # order of the autoregressive system
-tsub = 1            # downsampling factor in time for initialization,
+p = 1  # order of the autoregressive system
+tsub = 2            # downsampling factor in time for initialization,
 ssub = 1            # downsampling factor in space for initialization,
 #min_pnr = 8        # min peak to noise ration from PNR image
 min_pnr = 4        # min peak to noise ration from PNR image
@@ -216,8 +180,8 @@ cnm = cnmf.CNMF(n_processes, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=d
 #cnm.params.set('spatial', {'se': np.ones((3,3,1), dtype=np.uint8)})
 cnm = cnm.fit(images)
 
-min_SNR = 2            # adaptive way to set threshold on the transient size
-r_values_min = 0.7    # threshold on space consistency (if you lower more components
+min_SNR = 1            # adaptive way to set threshold on the transient size
+r_values_min = 0.5    # threshold on space consistency (if you lower more components
 #                        will be accepted, potentially with worst quality)
 cnm.params.set('quality', {'min_SNR': min_SNR,'rval_thr': r_values_min,'use_cnn': False})
 cnm.estimates.evaluate_components(images, cnm.params, dview=dview)
@@ -226,10 +190,10 @@ print(' ***** ')
 print(f"Number of total components: {len(cnm.estimates.C)}")
 print(f"Number of accepted components: {len(cnm.estimates.idx_components)}")
 
-#try:
-#    cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
-#except:
-#    pass
+try:
+    cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
+except:
+    pass
 cnm.save(FourD_File[0].replace('.tif',OutputFileAppend+'.hdf5'))
 cnm2 = cnm.refit(images, dview=dview)
 cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)

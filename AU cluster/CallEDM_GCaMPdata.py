@@ -4,18 +4,25 @@ import os
 import sys
 
 fnames_all =[]
-folder=str(sys.argv[1])
+#folder=str(sys.argv[1])
 
-base_folder=folder # folder containing the demo files
-for file1 in glob.glob(os.path.join(base_folder,'**/3Dreg/'),recursive=True): 
- file1=os.path.normpath(file1.split('/3Dreg')[0])
- fnames_all.append(file1)
+#base_folder=folder # folder containing the demo files
+#for file1 in glob.glob(os.path.join(base_folder,'**/3Dreg/'),recursive=True): 
+# file1=os.path.normpath(file1.split('/3Dreg')[0])
+# fnames_all.append(file1)
+#fnames_all.sort()
+
+
+with open('XMap.txt', 'r') as f:
+#    for line in fnames_all:
+#        f.write("%s\n" % line)
+ for line in f: 
+  line = line.strip()
+  #print(line)
+  if not "MAX" in line:
+   fnames_all.append(line) 
+
 fnames_all.sort()
-
-
-with open('XMap.txt', 'w') as f:
-    for line in fnames_all:
-        f.write("%s\n" % line)
 
 
 #Create the job array
@@ -29,7 +36,8 @@ with open('XmapGCaMP.sh','w') as the_file:
  the_file.write('#SBATCH  --output=XmapGCaMP_%A_%a.out \n')
  job_string = """#SBATCH --array=1-%s \n""" % (str(len(fnames_all)))
  the_file.write(job_string) 
- job_string = 'filename=`ls -d '+base_folder+'/*/ | tail -n +\\${SLURM_ARRAY_TASK_ID} | head -1` \n'
+ #job_string = 'filename=`ls -d '+base_folder+'/*/ | tail -n +\\${SLURM_ARRAY_TASK_ID} | head -1` \n'
+ job_string = "filename=`sed -n ${SLURM_ARRAY_TASK_ID}p XMap.txt` \n"
  the_file.write(job_string) 
  the_file.write('source ~/miniforge3/etc/profile.d/conda.sh\n')
  the_file.write('conda activate caiman \n')

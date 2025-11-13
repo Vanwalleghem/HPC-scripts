@@ -26,7 +26,7 @@ with open('WarpAndJacobian.sh','w') as the_file:
  the_file.write('source ~/miniforge3/etc/profile.d/conda.sh\n') 
  the_file.write('conda init\n')
  the_file.write('conda activate ants \n')
- job_string = 'python ~/WarpJacobianDeterminant_v2.py $filename \n' 
+ job_string = 'python ~/JacobDetermMissing.py $filename \n' 
  the_file.write(job_string)
 
 

@@ -13,15 +13,25 @@ import tifffile
 import nibabel as nib
 from subprocess import call
 
-fnames=[os.path.normpath(sys.argv[1])]
+print(sys.argv)
+tif_file_folder=sys.argv[1]
+tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
+raw_string = r"{}".format(tif_file_folder)
+print(raw_string)
+fnames=[os.path.normpath(tif_file_folder)]
 
 #Check if there are some .nii files left
-Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2.nii'))
-if Warped_files:
- call('find '+fnames[0]+' -type f -name "*.nii" -exec gzip {} -f \;')
+Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped*.nii'))
+#if Warped_files:
+# call('find '+fnames[0]+' -type f -name "*.nii" -exec gzip {} -f \;')
+
+print(fnames)
 
 #file = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
-Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2.nii.gz'))
+Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped3.nii.gz'))
+if len(Warped_files)<1200:
+ #Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2.nii.gz'))
+ print('Not enough warped3 files')
 print(Warped_files[0])
 
 if not os.path.isfile(Warped_files[0].replace('.nii.gz','.tif')):

@@ -36,7 +36,7 @@ T=len(img_seq_list)
 #    img_nb=int( re.search('power\d+_(\d+)_Jacobian',name).group(1)) 
 #    img_temp=nib.load(name)
 #    img_temp=img_temp.get_fdata()
-#    #img_temp=np.squeeze(np.asarray(img_temp)).transpose()
+    #img_temp=np.squeeze(np.asarray(img_temp)).transpose()
 #    C2frames[img_nb,:,:,:]=img_temp
 
 #matlab_arrays={}  
@@ -44,11 +44,12 @@ list_caiman_files=glob.glob(os.path.join(tif_file_folder,'*.hdf5'))
 for caiman_filename in list_caiman_files:
  #caiman_filename = max(list_caiman_files, key=os.path.getctime)
  if 'Tifflist' in caiman_filename or 'optCaImAn' in caiman_filename:
-  cnm_seed=cnmf.cnmf.load_CNMF(caiman_filename)    
-  Ain=cnm_seed.estimates.A.toarray()
-  Ain=np.reshape(Ain,(cnm_seed.dims[0],cnm_seed.dims[1],cnm_seed.dims[2],Ain.shape[1]))
-  Time_serie=np.zeros((Ain.shape[-1],T))
-  for name in img_seq_list:
+  if not os.path.isfile(os.path.join(tif_file_folder,os.path.basename(tif_file_folder).split('_range')[0]+'_Jacobian'+caiman_filename.split('_')[-1].split('.hdf5')[0]+'.npy')):
+   cnm_seed=cnmf.cnmf.load_CNMF(caiman_filename)    
+   Ain=cnm_seed.estimates.A.toarray()
+   Ain=np.reshape(Ain,(cnm_seed.dims[0],cnm_seed.dims[1],cnm_seed.dims[2],Ain.shape[1]))
+   Time_serie=np.zeros((Ain.shape[-1],T))
+   for name in img_seq_list:
      img_nb=int( re.search('power\d+_(\d+)_Jacobian',name).group(1)) 
      img_temp=nib.load(name)
      img_temp=img_temp.get_fdata()
@@ -57,8 +58,8 @@ for caiman_filename in list_caiman_files:
          weights=Ain[Ain[:,:,:,ROI_nb]>0,ROI_nb]
          avg_Jacob=np.average(temp, weights=weights) #use the Ain values to weight the Jacobian
          Time_serie[ROI_nb,img_nb]=avg_Jacob
-  np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder).split('_range')[0]+'_Jacobian'+caiman_filename.split('_')[-1].split('.hdf5')[0]+'.npy'),Time_serie)
-  #savemat(os.path.join(tif_file_folder,os.path.basename(tif_file_folder).split('_range')[0]+'_Jacobian'+caiman_filename.split('_')[-1].split('.hdf5')[0]+'.mat'),Time_serie)
+   np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder).split('_range')[0]+'_Jacobian'+caiman_filename.split('_')[-1].split('.hdf5')[0]+'.npy'),Time_serie)
+   #savemat(os.path.join(tif_file_folder,os.path.basename(tif_file_folder).split('_range')[0]+'_Jacobian'+caiman_filename.split('_')[-1].split('.hdf5')[0]+'.mat'),Time_serie)
  else:
      continue
 

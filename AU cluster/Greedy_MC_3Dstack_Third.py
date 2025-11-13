@@ -7,6 +7,8 @@ from skimage import io
 import numpy as np
 import gc
 import subprocess
+import nibabel as nib
+import re
 
 def is_file_empty(file_path):
     """ Check if file is empty by confirming if its size is 0 bytes"""
@@ -190,7 +192,7 @@ print(tif_file_folder+' '+str(len(MC_img_list)))
 #MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]
 print(tif_file_folder+' '+str(len(MC_img_list)))    
 file_name=os.path.basename(os.path.normpath(tif_file_folder))
-if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'_4D2_MaxZ.tif'):
+if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'_4D2_MaxT.tif'):
  C1_name=MC_img_list[0] 
  range2=int(file_name.split('range')[-1].split('_')[0])
  step=int(file_name.split('step')[-1].split('_')[0])
@@ -214,6 +216,8 @@ if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'
   img_temp=np.squeeze(np.asarray(img_temp,dtype='uint16')).transpose()
   C1frames[img_nb,:,:,:]=img_temp 
  #tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D.tif',C1frames)
+ print(C1frames.shape)
  tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D2_MaxZ.tif',np.max(C1frames,axis=1))
  tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D2_MeanT.tif',np.mean(C1frames,axis=0))
+ tifffile.imwrite(tif_file_folder+'/'+file_name+'_4D2_MaxT.tif',np.max(C1frames,axis=0))
  print(tif_file_folder + 'is done')

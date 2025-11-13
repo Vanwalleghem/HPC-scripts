@@ -195,26 +195,12 @@ for exp_no in exp_list:
                                 
                         timeseries=np.column_stack((derived_eeg[:,0:length_timeserie].transpose(),derived_data[1][0:length_timeserie],heart_rate[0:length_timeserie],breath_signal[0:length_timeserie],breath_rate[0:length_timeserie]))
                         print(timeseries.shape)
-                        Embed_dims=[None] * timeseries.shape[1]
-                        for i in range(0,timeseries.shape[1]):
-                            Embed_dims[i]=kedm.edim(timeseries[:,i],30,5,1)
-                            
-                        np.save(os.path.join(result_dir,'results','experiment'+str(exp_no)+rf'sub-{sub}_ses-{ses}_task-stim{stim}_Embed_dims.npy'),Embed_dims)
-                        ccm_rho=kedm.xmap(timeseries,Embed_dims,5,1)
-                        np.save(os.path.join(result_dir,'results','experiment'+str(exp_no)+rf'sub-{sub}_ses-{ses}_task-stim{stim}_xmap.npy'),ccm_rho)
+                        #Embed_dims=[None] * timeseries.shape[1]
+                        #for i in range(0,timeseries.shape[1]):
+                        #    Embed_dims[i]=kedm.edim(timeseries[:,i],30,5,1)
+                        #    
+                        #np.save(os.path.join(result_dir,'results','experiment'+str(exp_no)+rf'sub-{sub}_ses-{ses}_task-stim{stim}_Embed_dims.npy'),Embed_dims)
+                        Embed_dims=np.load(os.path.join(result_dir,'results','experiment'+str(exp_no)+rf'sub-{sub}_ses-{ses}_task-stim{stim}_Embed_dims.npy'))
+                        ccm_rho=kedm.xmap(timeseries,Embed_dims,5,20)
+                        np.save(os.path.join(result_dir,'results','experiment'+str(exp_no)+rf'sub-{sub}_ses-{ses}_task-stim{stim}_xmapDelay20.npy'),ccm_rho)              
                         
-                        #ECG, heart rate, respiration, breath rate
-                        indices_body=[65,66,67,68]
-                        lib_sizes = range(10, 200, 10)
-                        sample = 50
-                        Tau=5
-                        Tp=1
-                        CCM_array_body_brain=np.zeros((len(lib_sizes),len(indices_body),min(derived_eeg.shape)))
-                        CCM_array_brain_body=np.zeros((len(lib_sizes),len(indices_body),min(derived_eeg.shape)))
-                        for i,indice_body in enumerate(indices_body):
-                            for eeg_node in range(0,64):
-                                CCM_array_body_brain[:,i,eeg_node]=kedm.ccm(timeseries[:,eeg_node],timeseries[:,indice_body-1],lib_sizes=lib_sizes, sample=sample,E=Embed_dims[eeg_node],tau=Tau,Tp=Tp)
-                                CCM_array_brain_body[:,i,eeg_node]=kedm.ccm(timeseries[:,indice_body-1],timeseries[:,eeg_node],lib_sizes=lib_sizes, sample=sample,E=Embed_dims[eeg_node],tau=Tau,Tp=Tp)
-
-                        np.save(os.path.join(result_dir,'results','experiment'+str(exp_no)+rf'sub-{sub}_ses-{ses}_task-stim{stim}_ccm_rho_bodyBrain.npy'),CCM_array_body_brain)
-                        np.save(os.path.join(result_dir,'results','experiment'+str(exp_no)+rf'sub-{sub}_ses-{ses}_task-stim{stim}_ccm_rho_Brainbody.npy'),CCM_array_brain_body)

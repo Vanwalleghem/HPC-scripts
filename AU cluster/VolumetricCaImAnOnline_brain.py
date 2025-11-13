@@ -1,19 +1,22 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Dec 19 11:01:07 2024
+
+@author: au691573
+"""
+
 import sys
 import os
-import shutil
+#import shutil
 import glob
-import os
-import tifffile
-import numpy as np
 import caiman as cm
 from caiman.source_extraction import cnmf
-from caiman.motion_correction import MotionCorrect
-from caiman.source_extraction.cnmf import params as params
 import cv2
-from subprocess import call
 opencv=True
-import re
 import gc
+import logging
+import datetime
+from pathlib import Path
 
 try:
     cv2.setNumThreads(2)
@@ -30,12 +33,22 @@ def is_file_empty(file_path):
  else:
   return True 
 
+logger = logging.getLogger("caiman")
+logger.setLevel(logging.DEBUG)
+# Set path to logfile
+current_datetime = datetime.datetime.now().strftime("_%Y%m%d_%H%M%S")
+log_filename = 'OnlineCaImAn' + current_datetime + '.log'
+log_path = Path(cm.paths.get_tempdir()) / log_filename
+# Done with path stuff
+handler = logging.FileHandler(log_path)
+log_format = logging.Formatter("%(relativeCreated)12d [%(filename)s:%(funcName)10s():%(lineno)s] [%(process)d] %(message)s")
+handler.setFormatter(log_format)
+logger.addHandler(handler)
+
 n_processes=4
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
-if 'dview' in locals():
-    cm.stop_server(dview=dview)
 
-c, dview, n_processes = cm.cluster.setup_cluster(backend='single', n_processes=n_processes)
+c, dview, n_processes = cm.cluster.setup_cluster(backend='multiprocessing', n_processes=n_processes)
 
 tif_folder=os.path.normpath(sys.argv[1])
 tif_files=glob.glob(os.path.join(tif_folder,'3Dreg','*.tif'))
@@ -44,34 +57,30 @@ print(tif_files[0])
 FourD_File = glob.glob(os.path.join(tif_folder,'*4D2.tif'))
 print(FourD_File)
 
-if glob.glob(FourD_File[0].replace('.tif','_new_brain.hdf5')):
+if glob.glob(FourD_File[0].replace('.tif','_optCaImAn_onAcid.hdf5')):
  print("Folder is done")
  exit()
 
-brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')
+#brain_file_name=FourD_File[0].replace('4D2.tif','4D_brain.tif')
+brain_file_name=FourD_File[0]
 
-if is_file_empty(brain_file_name): #Need to convert tif stack into a giant 4D movie
+#if is_file_empty(brain_file_name): #Need to convert tif stack into a giant 4D movie
 #Y = cm.load_movie_chain(brain_file_name)
 #Y.save(FourD_File[0].replace('4D2.tif','4D_brain.tif'))
- temp=tifffile.imread(tif_files[0])
- Y = tifffile.memmap(brain_file_name, dtype='uint16', shape=(1200,temp.shape[1],temp.shape[2],temp.shape[0]))
- print(Y.shape)
- for img_file in tif_files:
-  temp=tifffile.imread(img_file)
-  img_nb=int( re.search('_power.+_time(\d+)\.tif',img_file).group(1))
-  Y[img_nb,:,:,:]=temp.transpose()
- Y.flush()
+ #temp=tifffile.imread(tif_files[0])
+ #Y = tifffile.memmap(brain_file_name, dtype='uint16', shape=(1200,temp.shape[1],temp.shape[2],temp.shape[0]))
+ #print(Y.shape)
+ #for img_file in tif_files:
+  #temp=tifffile.imread(img_file)
+  #img_nb=int( re.search('_power.+_time(\d+)\.tif',img_file).group(1))
+  #Y[img_nb,:,:,:]=temp.transpose()
+ #Y.flush()
 
 #Below is not needed since we made the file above  
 #Y=cm.load(brain_file_name)
 #if Y.shape[1]<100: #Ensures that the axis order matches the expectation of CaImAn (time, x,y,z)
 # Y=np.moveaxis(Y, [3,1],[1,3])
 # tifffile.imwrite(brain_file_name,Y)
-
-try:
- del Y
-except:
- pass
 
 gc.collect()
 
@@ -104,21 +113,23 @@ mc_dict = {
 opts = cnmf.params.CNMFParams(params_dict=mc_dict)
 
 # set parameters
+expected_comps = 500                                                # maximum number of expected components used for memory pre-allocation (exaggerate here)
+# set parameters
 rf = 25  # half-size of the patches in pixels. rf=25, patches are 50x50
 stride = 10  # amount of overlap between the patches in pixels
-K = 100  # number of neurons expected per patch
-gSig = [1, 1, 1]  # expected half size of neurons
-merge_thr = 0.8  # merging threshold, max correlation allowed
+K = None  # number of neurons expected per patch
+gSig = [4, 4, 2]  # expected half size of neurons
+merge_thr = 0.95  # merging threshold, max correlation allowed
 p = 1  # order of the autoregressive system
 tsub = 2            # downsampling factor in time for initialization,
 ssub = 1            # downsampling factor in space for initialization,
-min_pnr = 1        # min peak to noise ration from PNR image
+min_pnr = 10        # min peak to noise ration from PNR image
 ssub_B = 5          # additional downsampling factor in space for background
+min_corr=0.85
 ring_size_factor = 1.4  # radius of ring is gSiz*ring_size_factor
 rval_thr = 0.5   # accept components with space correlation threshold or higher
-expected_comps = 500                                                # maximum number of expected components used for memory pre-allocation (exaggerate here)
-
 print('set')
+
 
 opts = cnmf.params.CNMFParams(params_dict={
                                 'fr': frate,
@@ -139,8 +150,9 @@ opts = cnmf.params.CNMFParams(params_dict={
                                 'rval_thr': rval_thr,
                                 'center_psf': True,                    # leave as is for 1 photon
                                 'ssub_B': ssub_B,
+                                'min_corr': min_corr,
                                 'expected_comps': expected_comps,
-                                'init_batch': 100,             # length of mini batch for initialization
+                                'init_batch': 200,             # length of mini batch for initialization
                                 'init_method': 'cnmf',         # initialization method for initial batch
                                 'batch_update_suff_stat': True,# flag for updating sufficient statistics (used for updating shapes)
                                 'only_init': False,            # whether to run only the initialization
@@ -149,6 +161,8 @@ opts = cnmf.params.CNMFParams(params_dict={
                                 'del_duplicates': True,                # whether to remove duplicates from initialization
                                 'is3D': True,
                                 'border_pix': 0})                # The parameter border pix must be set to 0 for 3D data since border removal is not implemented)
+                                
+cnm = cnmf.CNMF(n_processes, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview,rf=rf,stride=stride,only_init_patch=True)
 
 opts.set('quality', {'min_cnn_thr': 0.05})
 
@@ -163,10 +177,10 @@ except:
  pass
 
 try:
-    cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
+    cnm.estimates.detrend_df_f(quantileMin=5, frames_window=80)
 except:
     pass
     
-cnm.save(brain_file_name.replace('.tif','_new.hdf5'))
+cnm.save(brain_file_name.replace('.tif','_optCaImAn_onAcid.hdf5'))
 
 cm.stop_server(dview=dview)

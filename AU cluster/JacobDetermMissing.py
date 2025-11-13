@@ -23,7 +23,7 @@ else:
 
 img_nb_list=[]
 for name in img_seq_list:
- img_nb=int( re.search("power\d+_(\d+)_Jacobian",name).group(1))
+ img_nb=int( re.search("power\\d+_(\\d+)_Jacobian",name).group(1))
  img_nb_list.append(img_nb)
 
 nb_list=list(range(0,1199))

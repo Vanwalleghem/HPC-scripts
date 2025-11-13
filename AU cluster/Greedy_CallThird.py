@@ -18,7 +18,10 @@ for file in glob.glob(os.path.join(base_folder,'*/')):
  fnames_all.append(file)
 fnames_all.sort()
 
-fnames_all.sort()
+#with open('FoldersToReprocess.txt', 'w') as f:
+#    for line in fnames_all:
+#        f.write("%s\n" % line)
+
 
 #Create the job array
 with open('Greedy3_array.sh','w') as the_file:
@@ -27,13 +30,15 @@ with open('Greedy3_array.sh','w') as the_file:
  the_file.write('#SBATCH --partition normal \n')
  the_file.write('#SBATCH --mem 64G \n')
  the_file.write('#SBATCH  -c 16 \n') 
- the_file.write('#SBATCH  -t 3-0 \n')
- the_file.write('#SBATCH  --output=CaImAn_%A_%a.out \n')
+ the_file.write('#SBATCH  -t 2-0 \n')
+ the_file.write('#SBATCH  --output=Greedy3_%A_%a.out \n')
  job_string = """#SBATCH --array=1-%s \n""" % (str(len(fnames_all)))
  the_file.write(job_string) 
- job_string = "filename=`sed -n ${SLURM_ARRAY_TASK_ID}p FoldersToReprocess.txt` \n"
+ #job_string = "filename=`sed -n ${SLURM_ARRAY_TASK_ID}p FoldersToReprocess.txt` \n"
+ job_string = 'filename=`ls -d '+base_folder+'/*/ | tail -n +\\${SLURM_ARRAY_TASK_ID} | head -1` \n'
  the_file.write(job_string) 
- the_file.write('source ~/miniconda3/etc/profile.d/conda.sh\n')
+ the_file.write('source ~/miniforge3/etc/profile.d/conda.sh\n')
+ the_file.write('conda init\n')
  the_file.write('conda activate greedy\n')  
  the_file.write('export CAIMAN_TEMP=/faststorage/project/FUNCT_ENS/CaImAnTemp/\n')
  job_string = 'python ~/Greedy_MC_3Dstack_Third.py $filename \n' 

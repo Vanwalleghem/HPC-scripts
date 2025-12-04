@@ -21,7 +21,7 @@ def is_file_empty(file_path):
         return True 
 
 def Register_single_image_SecondPass(Mov_name,template_name,Mask_name):        
- output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2').replace('_Greedy.nii.gz','_Greedy2')
+ output_name = Mov_name.replace('_Warped.nii.gz','_Greedy2').replace('_Greedy.nii.gz','.tif_Greedy2').replace('.tif.tif','.tif')
  if is_file_empty(output_name+'.nii.gz'):   
   job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -n 200x100x50 -e 0.25 -m NCC 2x2x2"
   job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
@@ -168,14 +168,14 @@ if not os.path.exists(mask_name):
 if not os.path.exists(template_name):
     temp_file=tifffile.imread(FindTemplate(tif_file_folder))
     tifffile.imwrite(template_name,temp_file.astype(np.uint16))
-    
+
 img_seq_list2=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
 
 #First check if the files were warped once, or twice
 if len(img_seq_list)>=1200 and len(img_seq_list2)<1200:
  print('need to do the second warp')
  for img_name in img_seq_list:
-  if not os.path.exists(img_name.replace('_Greedy.nii.gz','_Warped2.nii.gz')):
+  if not os.path.exists(img_name.replace('_Greedy.nii.gz','.tif_Warped2.nii.gz')):
    Mov_name = img_name.replace('_Greedy.nii.gz','.tif')
    job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg.nii.gz Affine_name"
    output_name = Mov_name.replace('.tif','_Greedy')
@@ -277,7 +277,7 @@ if len(MC_img_list)==1200 and not os.path.exists(tif_file_folder+'/'+file_name+'
   Register_single_image_ThirdPass(C1_name.replace('_Warped3.nii.gz','_Warped2.nii.gz'),template_name)  
   base_img=nib.load(C1_name)
  base_img=np.squeeze(np.asarray(base_img.get_fdata(dtype='float16'),dtype='uint16')).transpose()        
- C1frames=np.zeros((int(len(MC_img_list)),TrueSlices,base_img.shape[1],base_img.shape[2]), dtype='uint16')
+ C1frames=np.zeros((int(len(MC_img_list)),TrueSlices,base_img.shape[0],base_img.shape[1]), dtype='uint16')
  for img_nb,C2_name in enumerate(MC_img_list):    
   img_nb=int( re.search('_power.+_time(\d+)\.tif.',C2_name).group(1)) 
   try:

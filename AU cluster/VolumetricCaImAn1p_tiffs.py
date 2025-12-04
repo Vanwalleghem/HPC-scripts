@@ -10,7 +10,6 @@ import os
 #import shutil
 import glob
 import logging
-import tifffile
 import natsort
 import numpy as np
 
@@ -25,7 +24,6 @@ import cv2
 import time
 import datetime
 from pathlib import Path
-import nibabel as nib
 opencv=True
 
 try:
@@ -47,10 +45,10 @@ log_format = logging.Formatter("%(relativeCreated)12d [%(filename)s:%(funcName)1
 handler.setFormatter(log_format)
 logger.addHandler(handler)
 
-n_processes=2
+n_processes=4
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 
-OutputFileAppend='_Tifflist'
+OutputFileAppend='_TifflistLow'
 
 c, dview, n_processes = cm.cluster.setup_cluster(backend='multiprocessing', n_processes=n_processes, single_thread=False)
 
@@ -106,7 +104,7 @@ motion_correct = True    # flag for performing motion correction
 pw_rigid = True         # flag for performing piecewise-rigid motion correction (otherwise just rigid)
 gSig_filt = None #(4, 4, 2)       # size of high pass spatial filtering, used in 1p data
 max_shifts = (5, 5, 2)      # maximum allowed rigid shift
-strides = (24, 24, 4)       # start a new patch for pw-rigid motion correction every x pixels
+strides = (24, 24, 3)       # start a new patch for pw-rigid motion correction every x pixels
 overlaps = (12, 12, 2)      # overlap between pathes (size of patch strides+overlaps)
 max_deviation_rigid = 3  # maximum deviation allowed for patch with respect to rigid shifts
 border_nan = 'copy'      # replicate values along the boundaries
@@ -171,19 +169,19 @@ c, dview, n_processes = cm.cluster.setup_cluster(
 # set parameters
 rf = 25  # half-size of the patches in pixels. rf=25, patches are 50x50
 stride = 10  # amount of overlap between the patches in pixels
-K = 50  # number of neurons expected per patch
+K = 100  # number of neurons expected per patch
 gSig = [3, 3, 2]  # expected half size of neurons
-merge_thr = 0.95  # merging threshold, max correlation allowed
+merge_thr = 0.9  # merging threshold, max correlation allowed
 p = 1  # order of the autoregressive system
 tsub = 2            # downsampling factor in time for initialization,
 ssub = 1            # downsampling factor in space for initialization,
 #min_pnr = 8        # min peak to noise ration from PNR image
-min_pnr = 4        # min peak to noise ration from PNR image
+min_pnr = 2        # min peak to noise ration from PNR image
 ssub_B = 5          # additional downsampling factor in space for background
 #min_corr=0.85
-min_corr=0.8
-ring_size_factor = 1.4  # radius of ring is gSiz*ring_size_factor
-rval_thr = 0.7   # accept components with space correlation threshold or higher
+min_corr=0.7
+ring_size_factor = 1.5  # radius of ring is gSiz*ring_size_factor
+rval_thr = 0.6   # accept components with space correlation threshold or higher
 print('set')
 
 opts = cnmf.params.CNMFParams(params_dict={
@@ -207,13 +205,13 @@ opts = cnmf.params.CNMFParams(params_dict={
                                 'del_duplicates': True,                # whether to remove duplicates from initialization
                                 'border_pix': 0})                # The parameter border pix must be set to 0 for 3D data since border removal is not implemented)
 
-cnm = cnmf.CNMF(n_processes, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview,rf=rf,stride=stride,only_init_patch=True)
+cnm = cnmf.CNMF(n_processes, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview,rf=rf,stride=stride,only_init_patch=True,params=opts)
                 
 #cnm.params.set('spatial', {'se': np.ones((3,3,1), dtype=np.uint8)})
 cnm = cnm.fit(images)
 
-min_SNR = 2            # adaptive way to set threshold on the transient size
-r_values_min = 0.6    # threshold on space consistency (if you lower more components
+min_SNR = 1.5            # adaptive way to set threshold on the transient size
+r_values_min = 0.5    # threshold on space consistency (if you lower more components
 #                        will be accepted, potentially with worst quality)
 cnm.params.set('quality', {'min_SNR': min_SNR,'rval_thr': r_values_min,'use_cnn': False})
 cnm.estimates.evaluate_components(images, cnm.params, dview=dview)

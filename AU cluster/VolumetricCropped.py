@@ -7,6 +7,7 @@ Created on Thu Dec 19 10:14:31 2024
 
 import sys
 import os
+import tifffile
 
 os.environ["KMP_AFFINITY"] = "disabled"
 os.environ["OMP_NUM_THREADS"] = "1"
@@ -63,17 +64,17 @@ logger.addHandler(handler)
 n_processes=1
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 
-OutputFileAppend='_TifflistNew'
+OutputFileAppend='_TifflistCrop'
 
-c, dview, n_processes = cm.cluster.setup_cluster(backend='ipyparallel', n_processes=n_processes, single_thread=False)
+c, dview, n_processes = cm.cluster.setup_cluster(n_processes=n_processes, single_thread=False)
 
 #print(FourD_File)
 #hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
-hdf5_name=os.path.join(fnames[0],FourD_File+'_movie.hdf5')
-List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*RS*Warped3.tif')))
+hdf5_name=os.path.join(fnames[0],FourD_File+'_movie_crop.hdf5')
+List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*RS*Warped3crop.tif')))
 print(hdf5_name)
 if len(List_files)<1200:
- print('not enough warped3.tif files, switching to warped2')
+ print('not enough cropped warped3.tif files, switching to warped2')
  #List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2*.tif')))
  List_files=sorted(glob.glob(os.path.join(fnames[0],'3Dreg/*RS*Warped2.tif')))
  with open('ToCheckCaiman.txt', 'a') as f:  
@@ -146,7 +147,7 @@ mc_dict = {
 }
 
 opts = cnmf.params.CNMFParams(params_dict=mc_dict)
-file_to_save=os.path.join(tif_file_folder,'mem_file_RS.txt')
+file_to_save=os.path.join(tif_file_folder,'mem_file.txt')
 if os.path.exists(file_to_save):
    with open(file_to_save, 'r') as f:
     lines = f.readlines()
@@ -154,6 +155,7 @@ if os.path.exists(file_to_save):
     mmap_filename = r"{}".format(mmap_filename)
     if os.path.exists(mmap_filename):
      Yr, dims, T = cm.load_memmap(mmap_filename)
+     fname_new2=mmap_filename
     else:
      mc = cm.motion_correction.MotionCorrect(fname2, dview=dview, **opts.get_group('motion'))
      try:
@@ -186,10 +188,14 @@ else:
     Yr, dims, T = cm.load_memmap(fname_new2)
      
 
+
 print('dimensions :', dims, '. Number of frames :',T)
 if (T<1000):
  print('problem with dimensions')
- exit() 
+ exit()
+ 
+
+
  
 #if glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
 # print('3')
@@ -207,17 +213,21 @@ images = np.reshape(Yr.T, [T] + list(dims), order='F')
 del Yr
 gc.collect()  
 
+Cn = cm.local_correlations(images, swap_dim=False)
+tifffile.imwrite(os.path.join(fnames[0],FourD_File+'_corr.tif'),Cn.transpose, bigtiff=True)
+
 n_processes=1
-#%% restart cluster to clean up memory
+#%% restart cluster to clean up memory #backend='ipyparallel'
 cm.stop_server(dview=dview)
-c, dview, n_processes = cm.cluster.setup_cluster(
-    backend='ipyparallel', n_processes=n_processes, single_thread=True)
-n_processes=1
+c, dview, n_processes = cm.cluster.setup_cluster(n_processes=n_processes, single_thread=True)
+
+
+
 # set parameters
-rf = 30  # half-size of the patches in pixels. rf=25, patches are 50x50
-stride = 10  # amount of overlap between the patches in pixels
-K = 100  # number of neurons expected per patch
-gSig = [4, 4, 2]  # expected half size of neurons
+rf = 50  # half-size of the patches in pixels. rf=25, patches are 50x50
+stride = 20  # amount of overlap between the patches in pixels
+K = 300  # number of neurons expected per patch
+gSig = [3, 3, 2]  # expected half size of neurons
 merge_thr = 0.7  # merging threshold, max correlation allowed
 p = 1  # order of the autoregressive system
 tsub = 1            # downsampling factor in time for initialization,
@@ -244,10 +254,10 @@ opts = cnmf.params.CNMFParams(params_dict={
  'tsub': tsub,
  'ssub': ssub, 
  'use_cnn':True, 
- 'only_init': True,    # set it to True to run CNMF-E
+ #'only_init': True,    # set it to True to run CNMF-E
  'noise_method':'median',
  'method_deconvolution': 'oasis',       # could use 'cvxpy' alternatively        
- 'update_background_components': False,
+ 'update_background_components': True,
  'method_init': 'greedy_roi', #'corr_pnr',                             
  'min_pnr': min_pnr,
  'min_SNR': min_SNR,
@@ -262,20 +272,29 @@ opts = cnmf.params.CNMFParams(params_dict={
  'ring_size_factor': ring_size_factor,
  'del_duplicates': True,                # whether to remove duplicates from initialization
  'gnb':gnb,
- 'strides':(60,60,6),
- 'overlaps':(20,20,2),
+ #'strides':(60,60,6), try without patches
+ #'overlaps':(20,20,2),
  'use_hals':False,
- 'border_pix': 0})                # The parameter border pix must be set to 0 for 3D data since border removal is not implemented)
+ 'border_pix': 0},
+ 'fnames':fname_new2 
+ )                # The parameter border pix must be set to 0 for 3D data since border removal is not implemented)
 
-cnm = cnmf.CNMF(n_processes, params=opts, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview,rf=rf,stride=stride,only_init_patch=True)
-cnm.params.set('spatial', {'se': np.ones((3,3,1), dtype=np.uint8)})
-                
+#cnm = cnmf.CNMF(n_processes, params=opts, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview,rf=rf,stride=stride,only_init_patch=True)
+cnm = cnmf.CNMF(n_processes, params=opts, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview)
 #cnm.params.set('spatial', {'se': np.ones((3,3,1), dtype=np.uint8)})
+                
+cnm.params.set('spatial', {'se': np.ones((3,3,1), dtype=np.uint8)})
 
-cnm = cnm.fit(images) #could look into replacing with fit_file
+try:
+ cnm = cnm.fit(images) #could look into replacing with fit_file
+ cnm.save(hdf5_name.replace('_movie_crop.hdf5',OutputFileAppend+'Temp.hdf5'))
+except:
 
+ cnmO = cnmf.online_cnmf.OnACID(params=opts,motion_correct=False)
+ cnmO.fit_online();
+ cnmO.save(hdf5_name.replace('_movie_crop.hdf5',OutputFileAppend+'TempOnline.hdf5'))
  
-cnm.save(hdf5_name.replace('_movie.hdf5',OutputFileAppend+'Temp.hdf5'))
+
 
 min_SNR = 2            # adaptive way to set threshold on the transient size
 r_values_min = 0.5    # threshold on space consistency (if you lower more components

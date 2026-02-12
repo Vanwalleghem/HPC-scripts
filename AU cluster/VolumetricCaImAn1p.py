@@ -130,7 +130,7 @@ if True:
 images = np.reshape(Yr.T, [T] + list(dims), order='F') 
     #load frames in python format (T x X x Y)
     
-del(Yr)
+
 #%% restart cluster to clean up memory
 cm.stop_server(dview=dview)
 c, dview, n_processes = cm.cluster.setup_cluster(

@@ -13,17 +13,19 @@ import kedm
 import sys
 from pathlib import Path
 
-result_dir='/faststorage/project/FUNCT_ENS/data/XMap2'
+result_dir='/faststorage/project/FUNCT_ENS/data/XMap3'
 Path(result_dir).mkdir(parents=True, exist_ok=True)
 hdf5_file=sys.argv[1]
 hdf5_file=hdf5_file.split('\r')[0].replace("'","")# removes the return to line  
-tif_file_folder='/faststorage/project/FUNCT_ENS/data'
+#tif_file_folder='/faststorage/project/FUNCT_ENS/data'
 #raw_string = r"{}".format(tif_file_folder)
-temp=glob.glob(os.path.join(tif_file_folder,'*/*/',hdf5_file))
-tif_file_folder=os.path.normpath(temp[0])
-tif_file_name=os.path.basename(temp[0]).split('_4D')[0]
+#temp=glob.glob(os.path.join(tif_file_folder,'*/*/',hdf5_file))
+#tif_file_folder=os.path.normpath(temp[0])
+#tif_file_name=os.path.basename(temp[0]).split('_4D')[0]
+tif_file_name=os.path.basename(hdf5_file).split('_4D')[0]
 
-caiman_filename=temp[0]
+#caiman_filename=temp[0]
+caiman_filename=hdf5_file
 print('Analyzing '+caiman_filename)
 #list_caiman_files=glob.glob(os.path.join(tif_file_folder,'*.hdf5'))
 #for caiman_filename in list_caiman_files:

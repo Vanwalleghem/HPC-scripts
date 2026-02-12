@@ -10,7 +10,8 @@ def Warp_image_Twice(Mov_name):
     Affine_name = Mov_name.replace('.tif','_Greedy_affine.mat')
     job_string = "greedy -d 3 -rf FixImg -rm MovImg MovImg_Warped.nii.gz -r OutImg Affine_name"
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',Warping_matrix).replace('FixImg',Mov_name).replace('MovImg',Mov_name)
-    call(job_string,shell=True)    
+    call(job_string,shell=True)
+    Warping_matrix2 = Mov_name.replace('.tif','_Greedy2.nii.gz')
     job_string = "greedy -d 3 -rf FixImg -rm MovImg_Warped.nii.gz MovImg_Warped2.nii.gz -r OutImg_Greedy2.nii.gz"
     job_string = job_string.replace('OutImg',Mov_name).replace('FixImg',Mov_name).replace('MovImg',Mov_name)
     call(job_string,shell=True)

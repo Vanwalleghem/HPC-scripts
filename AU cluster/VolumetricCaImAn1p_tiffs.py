@@ -27,7 +27,7 @@ from pathlib import Path
 opencv=True
 
 try:
-    cv2.setNumThreads(0)
+    cv2.setNumThreads(1)
 except:
     pass
     
@@ -45,12 +45,12 @@ log_format = logging.Formatter("%(relativeCreated)12d [%(filename)s:%(funcName)1
 handler.setFormatter(log_format)
 logger.addHandler(handler)
 
-n_processes=4
+n_processes=1
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 
 OutputFileAppend='_TifflistLow'
 
-c, dview, n_processes = cm.cluster.setup_cluster(backend='multiprocessing', n_processes=n_processes, single_thread=False)
+c, dview, n_processes = cm.cluster.setup_cluster(backend='multiprocessing', n_processes=n_processes, single_thread=True)
 
 tif_file_folder=sys.argv[1]
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
@@ -167,13 +167,13 @@ c, dview, n_processes = cm.cluster.setup_cluster(
     backend='multiprocessing', n_processes=None, single_thread=False)
 
 # set parameters
-rf = 25  # half-size of the patches in pixels. rf=25, patches are 50x50
-stride = 10  # amount of overlap between the patches in pixels
+rf = 50  # half-size of the patches in pixels. rf=25, patches are 50x50
+stride = 20  # amount of overlap between the patches in pixels
 K = 100  # number of neurons expected per patch
 gSig = [3, 3, 2]  # expected half size of neurons
-merge_thr = 0.9  # merging threshold, max correlation allowed
+merge_thr = 0.8  # merging threshold, max correlation allowed
 p = 1  # order of the autoregressive system
-tsub = 2            # downsampling factor in time for initialization,
+tsub = 1            # downsampling factor in time for initialization,
 ssub = 1            # downsampling factor in space for initialization,
 #min_pnr = 8        # min peak to noise ration from PNR image
 min_pnr = 2        # min peak to noise ration from PNR image

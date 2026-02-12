@@ -30,8 +30,11 @@ print(fnames)
 #file = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
 Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped3.nii.gz'))
 if len(Warped_files)<1200:
- #Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2.nii.gz'))
- print('Not enough warped3 files')
+ #Warped_files=glob.glob(os.path.join(fnames[0],'3Dreg/*Warped2.nii.gz')) 
+ with open('ToCheckConvert.txt', 'a') as f:  
+  f.write("%s\n" % fnames[0])
+ print('not enough warped3.tif files')
+ exit() 
 print(Warped_files[0])
 
 if not os.path.isfile(Warped_files[0].replace('.nii.gz','.tif')):
@@ -40,4 +43,4 @@ if not os.path.isfile(Warped_files[0].replace('.nii.gz','.tif')):
         base_img=np.squeeze(np.asarray(base_img.get_fdata(),dtype='uint16'))
         tifffile.imwrite(file_warped.replace('.nii.gz','.tif'),base_img,bigtiff=True)
 
-print('error in the tif_file ') 
+print('finished processing') 

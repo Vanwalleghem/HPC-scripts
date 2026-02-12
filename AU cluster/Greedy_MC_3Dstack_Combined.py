@@ -144,7 +144,7 @@ raw_string = r"{}".format(tif_file_folder)
 #Hardcoding this for now
 #tif_file_folder=glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/data/**/',tif_file_folder)+'/',recursive=True)[0]
 #paths = [line for line in subprocess.check_output("find /faststorage/project/FUNCT_ENS/data/ -type d -iname '"+tif_file_folder+"'", shell=True).splitlines()]
-tif_file_folder=os.path.normpath(tif_file_folder)
+tif_file_folder=os.path.normpath(tif_file_folder.split('3Dreg')[0])
 print(tif_file_folder)
 img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Greedy.nii.gz'))
 if not img_seq_list:
@@ -153,7 +153,10 @@ if not img_seq_list:
  img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Greedy.nii.gz'))
 
 if not img_seq_list:
-    img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif'))
+  warp_1=False
+  img_seq_list=glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif'))
+else:
+  warp_1=True
  
 #You need to modify the next two lines to match where your template and masks are
 template_name=os.path.join(tif_file_folder,'3Dreg/template.tif')
@@ -172,7 +175,7 @@ if not os.path.exists(template_name):
 img_seq_list2=glob.glob(os.path.join(tif_file_folder,'3Dreg/*_Warped2.nii.gz'))
 
 #First check if the files were warped once, or twice
-if len(img_seq_list)>=1200 and len(img_seq_list2)<1200:
+if len(img_seq_list)>=1200 and len(img_seq_list2)<1200 and warp_1:
  print('need to do the second warp')
  for img_name in img_seq_list:
   if not os.path.exists(img_name.replace('_Greedy.nii.gz','.tif_Warped2.nii.gz')):
@@ -198,11 +201,11 @@ elif glob.glob(tif_file_folder+'/3Dreg/*_Greedy.nii'):
    job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',mask_name)
    call([job_string],shell=True)
    Register_single_image_SecondPass(img_name,template_name,mask_name)
-elif len(img_seq_list)<1200:
+elif not warp_1:
  print('need to do the first and second warp')
- tif_list=[x for x in glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif')) if not 'Warped' in x]
+ tif_list=[x for x in glob.glob(os.path.join(tif_file_folder,'3Dreg/*.tif')) if not 'Warped' or not 'template' in x]
  for img_name in tif_list:
-  Register_single_image(img_name,template_name,mask_name)
+  Register_single_image_forced(img_name,template_name,mask_name)
   Register_single_image_SecondPass(img_name.replace('.tif','_Warped.nii.gz'),template_name,mask_name)
 else:
     print('Folder '+tif_file_folder+' has been warped twice')
@@ -225,9 +228,19 @@ for img_name in img_seq_list:
  Register_single_image_ThirdPass(img_name,template_name)
  print(img_name)
 
-MC_img_list=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped3.nii.gz')    
+Warped_files=glob.glob(tif_file_folder+'/3Dreg/*'+os.path.basename(os.path.normpath(tif_file_folder))+'*_Warped3.nii.gz')    
 #MC_img_list=[x for x in MC_img_list if not 'LongReg' in x]
-print(tif_file_folder+' '+str(len(MC_img_list)))
+print(tif_file_folder+' '+str(len(Warped_files)))
+
+if not os.path.isfile(Warped_files[0].replace('.nii.gz','.tif')):
+    for file_warped in Warped_files:
+        base_img=nib.load(file_warped)
+        base_img=np.squeeze(np.asarray(base_img.get_fdata(),dtype='uint16'))
+        tifffile.imwrite(file_warped.replace('.nii.gz','.tif'),base_img,bigtiff=True)
+
+print('finished processing') 
+exit('done')
+
 #f = open(tif_file_folder+'/ListOfFailedFiles.txt','w')
 #file_name=os.path.basename(os.path.normpath(tif_file_folder))
 #if len(MC_img_list)==1200:

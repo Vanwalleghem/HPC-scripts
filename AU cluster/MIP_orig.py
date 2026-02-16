@@ -23,5 +23,5 @@ for file_name in MC_img_list:
     img_data=tifffile.imread(file_name)
     ImgData=np.maximum(ImgData,img_data)
 
-
-tifffile.imwrite(os.path.join(tif_file_folder,file_name+'_orig_MaxT.tif'),ImgData)
+file_name=os.path.basename(os.path.normpath(tif_file_folder))
+tifffile.imwrite(os.path.join(tif_file_folder,file_name+'_orig_MaxT.tif'),ImgData,imagej=True)

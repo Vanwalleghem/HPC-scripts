@@ -65,7 +65,7 @@ n_processes=1
 
 OutputFileAppend='_TifflistNew'
 
-c, dview, n_processes = cm.cluster.setup_cluster(backend='ipyparallel', n_processes=n_processes, single_thread=False)
+c, dview, n_processes = cm.cluster.setup_cluster( n_processes=n_processes, single_thread=False)
 
 #print(FourD_File)
 #hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
@@ -211,7 +211,7 @@ n_processes=1
 #%% restart cluster to clean up memory
 cm.stop_server(dview=dview)
 c, dview, n_processes = cm.cluster.setup_cluster(
-    backend='ipyparallel', n_processes=n_processes, single_thread=True)
+     n_processes=n_processes, single_thread=True)
 n_processes=1
 # set parameters
 rf = 30  # half-size of the patches in pixels. rf=25, patches are 50x50

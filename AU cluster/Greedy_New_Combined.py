@@ -137,8 +137,8 @@ def Register_single_image_forced(Mov_name,template_name,Mask_name):
     job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
     call([job_string],shell=True)
 
-tif_file_folder='/faststorage/project/FUNCT_ENS/NewENSDataDK/20231204/041223_RS_4DPF_GF_F1_HINDGUT_range130_step5_exposure11_power60/'
-#tif_file_folder=sys.argv[1]
+#tif_file_folder='/faststorage/project/FUNCT_ENS/NewENSDataDK/20231204/041223_RS_4DPF_GF_F1_HINDGUT_range130_step5_exposure11_power60/'
+tif_file_folder=sys.argv[1]
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
 raw_string = r"{}".format(tif_file_folder)
 tif_file_folder=os.path.normpath(tif_file_folder.split('3Dreg')[0])

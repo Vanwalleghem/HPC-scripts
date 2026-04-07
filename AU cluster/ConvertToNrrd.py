@@ -14,10 +14,10 @@ def load_metadata_csv(csv_path):
         for row in reader:
             filename = row['filename']
             # Store spacing as (Z, Y, X) to match the resampling function
-            metadata[filename] = np.array([
-                float(row['voxel_depth']),
+            metadata[filename] = np.array(
                 float(row['voxel_height']),
-                float(row['voxel_width'])
+                float(row['voxel_width'],[
+                float(row['voxel_depth']))
             ], dtype=float)
     return metadata
 
@@ -31,7 +31,7 @@ def save_nrrd(data, voxel_spacing, out_path):
     # nibabel prefers data in (X, Y, Z) with affine describing voxel sizes.
     # Our data is often (Z, Y, X) from nrrd; we need to reorder.
     # We'll convert from (Z,Y,X) -> (X,Y,Z) for nifti array, and set affine accordingly.
-    header = {'spacings': voxel_spacing}
+    header = {'spacings': voxel_spacingdata}
     nrrd.write(out_path,np.flip(np.transpose(data, (2,1,0)),axis=-1),header,compression_level=1)
     print("Saved Nrrd:", out_path)
 

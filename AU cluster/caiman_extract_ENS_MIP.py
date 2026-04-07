@@ -38,7 +38,7 @@ decay_time = 1.6                 # length of a typical transient in seconds
 # motion correction parameters
 motion_correct = True    # flag for performing motion correction
 pw_rigid = True         # flag for performing piecewise-rigid motion correction (otherwise just rigid)
-gSig_filt = (10, 10)       # size of high pass spatial filtering, used in 1p data
+gSig_filt = (6, 6)       # size of high pass spatial filtering, used in 1p data
 max_shifts = (10, 10)      # maximum allowed rigid shift
 strides = (60, 60)       # start a new patch for pw-rigid motion correction every x pixels
 overlaps = (24, 24)      # overlap between pathes (size of patch strides+overlaps)
@@ -96,8 +96,8 @@ for FourD_File in FourD_Files:
         #                         gnb<-1: Don't return background
         nb_patch = 0        # number of background components (rank) per patch if gnb>0,
         #                     else it is set automatically
-        min_corr = .6       # min peak value from correlation image
-        min_pnr = 5        # min peak to noise ration from PNR image
+        min_corr = .7       # min peak value from correlation image
+        min_pnr = 8        # min peak to noise ration from PNR image
         ssub_B = 3          # additional downsampling factor in space for background
         ring_size_factor = 1.6  # radius of ring is gSiz*ring_size_factor
         
@@ -157,3 +157,8 @@ for FourD_File in FourD_Files:
         cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
         
         cnm2.save(FourD_File.replace('.tif',OutputFileAppend+'b.hdf5'))
+        
+        
+        
+
+

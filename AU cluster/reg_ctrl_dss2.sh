@@ -7,6 +7,7 @@
 # Parameter files used for registration
 BINDIR="/faststorage/project/Inflammation/BREEZE/bin";
 STANDARD_REFERENCE="standard_ref.nii.nrrd"
+#STANDARD_REFERENCE="template_pERK.nrrd"
 STANDARD_RSP_REFERENCE=STANDARD_REFERENCE
 NON_PARAM_FILE="nonlinearRegistration.param"
 DIS_ATLAS_MASK_FILE="dis_atlas_mask.nii.gz"
@@ -80,8 +81,8 @@ warp_c0_file="w_${file}_C0.nii.gz"
 # Creates registered (C0,C1) and bisxform files 
 
 #biswebnode nonlinearregistration --paramfile ${NON_PARAM_FILE} -r ${STANDARD_REFERENCE} -t \${input_c1_file}
-printf "%s\n" "greedy -d 3 -a -o \${affine_c0_file} -i ${STANDARD_REFERENCE} \${input_c1_file} -n 200x100x50 -e 0.5 -m NCC 3x3x2 -ia-image-centers"
-greedy -d 3 -a -o \${affine_c0_file} -i ${STANDARD_REFERENCE} \${input_c0_file} -n 200x100x50 -e 0.5 -m NCC 3x3x2 -ia-image-centers
+printf "%s\n" "greedy -d 3 -a -o \${affine_c0_file} -i ${STANDARD_REFERENCE} \${input_c0_file} -n 200x100x50 -e 1   -n 200x40x20 -ia-identity -m WNCC 20x20x10 -search 1000 20 50"
+greedy -d 3 -a -o \${affine_c0_file} -i ${STANDARD_REFERENCE} \${input_c0_file} -n 200x100x50 -e 1   -n 200x40x20 -ia-identity -m WNCC 20x20x10 -search 1000 20 50
 printf "%s\n" "greedy -d 3 -o \${warp_c0_file} -i ${STANDARD_REFERENCE} \${input_c1_file}  -it \${affine_c0_file} -sv -n 300x150x80 -e 0.5 -m NCC 3x3x2 -V 2"
 greedy -d 3 -o \${warp_c0_file} -i ${STANDARD_REFERENCE} \${input_c0_file}  -it \${affine_c0_file} -sv -n 300x150x80 -e 0.5 -m NCC 3x3x2 -V 2
 #biswebnode resliceImage -r ${STANDARD_REFERENCE} -i \${input_c1_file} -x \${bisxform_file} -o \${registered_c1_file}

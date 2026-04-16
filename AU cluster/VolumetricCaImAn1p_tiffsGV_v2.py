@@ -10,21 +10,18 @@ import os
 
 os.environ["KMP_AFFINITY"] = "None"
 os.environ["OMP_NUM_THREADS"] = "1"
-#import shutil
 import glob
 import logging
 import numpy as np
 import natsort
 import gc
+import h5py
 
 os.environ["CAIMAN_TEMP"]="/faststorage/project/FUNCT_ENS/CaImAnTemp/"
 
 import caiman as cm
 from caiman.source_extraction import cnmf
-#from caiman.motion_correction import MotionCorrect
-#from caiman.source_extraction.cnmf import params as params
 import cv2
-#from subprocess import call
 import time
 import datetime
 from pathlib import Path
@@ -36,16 +33,11 @@ except:
     pass
     
 tif_file_folder=sys.argv[1]
-#tif_file_folder='/faststorage/project/FUNCT_ENS/NewENSDataDK/20231207/071223_RS_7DPF_GF_F1_HINDGUT_range145_step5_exposure10_power60'
+#tif_file_folder='/faststorage/project/FUNCT_ENS/data/20200731/GV_20200731_fish1_ENS_7DPF_range140_step5_exposure17_power60'
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
-#raw_string = r"{}".format(tif_file_folder)
-#print(raw_string)
 fnames=[os.path.normpath(tif_file_folder)]
-
-#fnames=[os.path.normpath(sys.argv[1])]
 print(fnames[0])
-#Will need to get rid of the below
-#FourD_File = glob.glob(os.path.join(fnames[0],'*4D2.tif'))
+
 FourD_File = os.path.basename(fnames[0])
 
 logger = logging.getLogger("caiman")
@@ -110,6 +102,7 @@ if len(List_files)>1200:
     if len(List_files)>1200:
      sys.exit("Too many tif files in: "+fnames[0])
 #hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
+
 if not glob.glob(hdf5_name):
  cm.load(List_files, is3D=True).save(hdf5_name) 
 
@@ -165,7 +158,7 @@ if os.path.exists(file_to_save):
          #if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
          mc = cm.motion_correction.MotionCorrect(fname2, dview=dview, **opts.get_group('motion'))
          mc.motion_correct(save_movie=True)
-     fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_'+FourD_File, order='C',border_to_0=0, dview=dview) # exclude borders
+     fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_'+FourD_File, order='C',border_to_0=0, dview=dview,is_3D=True) # exclude borders
      with open(file_to_save, 'w') as f:
       f.write(str(fname_new2))
      Yr, dims, T = cm.load_memmap(fname_new2)
@@ -180,7 +173,7 @@ else:
         #if not glob.glob(os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(FourD_File[0]).replace('.tif','*.mmap'))):
         mc = cm.motion_correction.MotionCorrect(fname2, dview=dview, **opts.get_group('motion'))
         mc.motion_correct(save_movie=True)
-    fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_'+FourD_File, order='C',border_to_0=0, dview=dview) # exclude borders
+    fname_new2 = cm.save_memmap(mc.mmap_file, base_name='memmap_'+FourD_File, order='C',border_to_0=0, dview=dview,is_3D=True) # exclude borders
     with open(file_to_save, 'w') as f:
      f.write(str(fname_new2))
     Yr, dims, T = cm.load_memmap(fname_new2)
@@ -204,6 +197,7 @@ if (T<1000):
  
 images = np.reshape(Yr.T, [T] + list(dims), order='F') 
     #load frames in python format (T x X x Y)
+#images=images.astype(np.uint16)
 del Yr
 gc.collect()  
 
@@ -230,7 +224,6 @@ gnb = -1
 min_corr=0.7
 ring_size_factor = 1.6  # radius of ring is gSiz*ring_size_factor
 rval_thr = 0.7   # accept components with space correlation threshold or higher
-print('set')
 
 opts = cnmf.params.CNMFParams(params_dict={
  'K': K,
@@ -256,13 +249,13 @@ opts = cnmf.params.CNMFParams(params_dict={
  'rval_thr': rval_thr,
  'center_psf': True,                    # leave as is for 1 photon
  'ssub_B': ssub_B, 
- 'init_batch': 200,
- #'n_pixels_per_process' : 10000,
+ 'init_batch': 600,
+ 'n_pixels_per_process' : 10000,
  'ring_size_factor': ring_size_factor,
  'del_duplicates': True,                # whether to remove duplicates from initialization
  'gnb':gnb,
- 'strides':(60,60,6),
- 'overlaps':(20,20,2),
+ 'strides':(rf,rf,6),
+ 'overlaps':(stride,stride,2),
  'use_hals':False,
  'border_pix': 0})                # The parameter border pix must be set to 0 for 3D data since border removal is not implemented)
 
@@ -272,36 +265,106 @@ cnm.params.set('spatial', {'se': np.ones((3,3,1), dtype=np.uint8)})
 #cnm.params.set('spatial', {'se': np.ones((3,3,1), dtype=np.uint8)})
 
 cnm = cnm.fit(images) #could look into replacing with fit_file
-
 try:
     cnm.save(hdf5_name.replace('_movie.hdf5',OutputFileAppend+'Temp.hdf5'))
-    
     min_SNR = 2            # adaptive way to set threshold on the transient size
     r_values_min = 0.5    # threshold on space consistency (if you lower more components
     #                        will be accepted, potentially with worst quality)
     cnm.params.set('quality', {'min_SNR': min_SNR,'rval_thr': r_values_min,'use_cnn': False})
     cnm.estimates.evaluate_components(images, cnm.params, dview=dview)
-    
     print(' ***** ')
     print(f"Number of total components: {len(cnm.estimates.C)}")
     print(f"Number of accepted components: {len(cnm.estimates.idx_components)}")
-    
-    #try:
-    #    cnm.estimates.detrend_df_f(quantileMin=5, frames_window=200)
-    #except:
-    #    pass
     cnm.save(hdf5_name.replace('_movie.hdf5',OutputFileAppend+'.hdf5'))
     cnm2 = cnm.refit(images, dview=dview)
     cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
-    
     print(' ***** ')
     print(f"Number of total components: {len(cnm2.estimates.C)}")
     print(f"Number of accepted components: {len(cnm2.estimates.idx_components)}")
-    
     cnm2.save(hdf5_name.replace('_movie.hdf5',OutputFileAppend+'b.hdf5'))
 except:
-    print('volumetric did not find anything')
-
+    print('volumetric did not find anything,process per slice')
+    p = 1               # order of the autoregressive system
+    K = 100            # upper bound on number of components per patch, in general None
+    gSig = (4, 4)       # gaussian width of a 2D gaussian kernel, which approximates a neuron
+    merge_thr = .7      # merging threshold, max correlation allowed
+    rf = 50             # half-size of the patches in pixels. e.g., if rf=40, patches are 80x80
+    stride_cnmf = 20    # amount of overlap between the patches in pixels
+    #                     (keep it at least large as gSiz, i.e 4 times the neuron size gSig)
+    tsub = 1            # downsampling factor in time for initialization,
+    #                     increase if you have memory problems
+    ssub = 1            # downsampling factor in space for initialization,
+    #                     increase if you have memory problems
+    #                     you can pass them here as boolean vectors
+    low_rank_background = None  # None leaves background of each patch intact,
+    #                     True performs global low-rank approximation if gnb>0
+    gnb = 0             # number of background components (rank) if positive,
+    #                     else exact ring model with following settings
+    #                         gnb= 0: Return background as b and W
+    #                         gnb=-1: Return full rank background B
+    #                         gnb<-1: Don't return background
+    nb_patch = 0        # number of background components (rank) per patch if gnb>0,
+    #                     else it is set automatically
+    min_corr = .7       # min peak value from correlation image
+    min_pnr = 8        # min peak to noise ration from PNR image
+    ssub_B = 3          # additional downsampling factor in space for background
+    ring_size_factor = 1.6  # radius of ring is gSiz*ring_size_factor
+    file_name=os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/','temp.hdf5')
+    opts = cnmf.params.CNMFParams(params_dict={'fnames':file_name,
+    								'is3D':False,
+    								'method_init': 'corr_pnr',  # use this for 1 photon
+    								'K': K,
+    								'gSig': gSig,
+    								#'gSiz': (4 * gSig + 1, 4 * gSig + 1),
+    								'merge_thr': merge_thr,
+    								'p': p,
+    								'fr':frate,
+    								'decay_time':1.8,
+    								'tsub': tsub,
+    								'ssub': ssub,
+    								'rf': rf,
+    								'stride': stride_cnmf,
+    								'only_init': True,    # set it to True to run CNMF-E
+    								'nb': gnb,
+    								'nb_patch': nb_patch,
+    								'method_deconvolution': 'oasis',       # could use 'cvxpy' alternatively
+    								'low_rank_background': low_rank_background,
+    								'update_background_components': True,  # sometimes setting to False improve the results
+    								'min_corr': min_corr,
+    								'min_pnr': min_pnr,
+    								'normalize_init': False,               # just leave as is
+    								'center_psf': True,                    # leave as is for 1 photon
+    								'ssub_B': ssub_B,
+    								'ring_size_factor': ring_size_factor,
+    								'del_duplicates': True,                # whether to remove duplicates from initialization
+    								'border_pix': 3})                # number of pixels to not consider in the borders)
+    for slice_nb in range(1,images.shape[-1]):
+        slice_data=np.squeeze(images[:,:,:,slice_nb])
+        cnm = cnmf.CNMF(n_processes, params=opts, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview,rf=rf,stride=stride_cnmf,only_init_patch=True)
+        with h5py.File(file_name, "w") as f:
+            dset = f.create_dataset('mov', data=slice_data)
+            dset.attrs["fr"] = frate
+            dset.attrs["start_time"] = 0
+            dset.attrs["file_name"] = [a.encode('utf8') for a in file_name]
+        cnm.fit_file()
+        cnm.save(hdf5_name.replace('.tif',OutputFileAppend+'_Slice'+str(slice_nb)+'_Temp.hdf5'))
+        min_SNR = 2            # adaptive way to set threshold on the transient size
+        r_values_min = 0.6    # threshold on space consistency (if you lower more components
+        #                        will be accepted, potentially with worst quality)
+        cnm.params.set('quality', {'min_SNR': min_SNR,
+        						   'rval_thr': r_values_min,
+        						   'use_cnn': False})
+        cnm.estimates.evaluate_components(images, cnm.params, dview=dview)
+        print(' ***** ')
+        print('Number of total components: ', len(cnm.estimates.C))
+        print('Number of accepted components: ', len(cnm.estimates.idx_components))
+        cnm.save(hdf5_name.replace('.tif',OutputFileAppend+'_Slice'+str(slice_nb)+'.hdf5'))
+        #%% RE-RUN seeded CNMF on accepted patches to refine and perform deconvolution 
+        Yr, dims, T = cm.load_memmap(cnm.mmap_file)
+        Yr = np.reshape(Yr.T, [T] + list(dims), order='F') 
+        cnm2 = cnm.refit(Yr, dview=dview)
+        cnm2.estimates.evaluate_components(images, cnm2.params, dview=dview)
+        cnm2.save(hdf5_name.replace('.tif',OutputFileAppend+'_Slice'+str(slice_nb)+'b.hdf5'))
 
 cm.stop_server(dview=dview)
 os.remove(mc.mmap_file[0])

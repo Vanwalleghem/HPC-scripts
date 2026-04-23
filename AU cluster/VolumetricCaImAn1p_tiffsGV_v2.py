@@ -104,7 +104,7 @@ if len(List_files)>1200:
 #hdf5_name=FourD_File[0].replace('.tif','_movie.hdf5')
 
 if not glob.glob(hdf5_name):
- cm.load(List_files, is3D=True).save(hdf5_name) 
+ cm.load(List_files,outtype=np.uint16, is3D=True).save(hdf5_name) 
 
 fname2 = [hdf5_name]
 
@@ -309,7 +309,7 @@ except:
     min_pnr = 8        # min peak to noise ration from PNR image
     ssub_B = 3          # additional downsampling factor in space for background
     ring_size_factor = 1.6  # radius of ring is gSiz*ring_size_factor
-    file_name=os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/','temp.hdf5')
+    file_name=os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(hdf5_name)+'temp.hdf5')
     opts = cnmf.params.CNMFParams(params_dict={'fnames':file_name,
     								'is3D':False,
     								'method_init': 'corr_pnr',  # use this for 1 photon

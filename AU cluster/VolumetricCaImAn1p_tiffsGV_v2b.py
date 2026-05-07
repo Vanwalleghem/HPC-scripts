@@ -30,7 +30,7 @@ except:
     pass
 
 tif_file_folder=sys.argv[1]
-#tif_file_folder='/faststorage/project/FUNCT_ENS/data/20200729/GV_20200729_fish5_ENS_5DPF_range140_step5_exposure17_power60'
+#tif_file_folder='/faststorage/project/FUNCT_ENS/data/20200731/GV_20200731_fish4_ENSFed_7DPF_range140_step5_exposure17_power60'
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
 fnames=[os.path.normpath(tif_file_folder)]
 print(fnames[0])
@@ -49,12 +49,12 @@ hdf5_name=os.path.join(fnames[0],os.path.basename(fnames[0])+'_movie.hdf5')
 #handler.setFormatter(log_format)
 #logger.addHandler(handler)
 
-n_processes=2
+n_processes=1
 #%% start a cluster for parallel processing (if a cluster already exists it will be closed and a new session will be opened)
 
-OutputFileAppend='_TifflistNew'
+OutputFileAppend='_TifflistNewSlice'
 
-c, dview, n_processes = cm.cluster.setup_cluster(n_processes=n_processes, single_thread=False)
+c, dview, n_processes = cm.cluster.setup_cluster(n_processes=n_processes, single_thread=True)
 
 #print(hdf5_name)
 #hdf5_name=hdf5_name[0].replace('.tif','_movie.hdf5')
@@ -92,14 +92,15 @@ fname2 = [hdf5_name]
 try:
     Y= cm.load(hdf5_name)
 except:
+    os.remove(hdf5_name)
     Y=cm.load(List_files,outtype=np.uint16, is3D=True)
-
+    Y.save(hdf5_name)
 
 p = 1               # order of the autoregressive system
 K = 100            # upper bound on number of components per patch, in general None
 gSig = (4, 4)       # gaussian width of a 2D gaussian kernel, which approximates a neuron
 merge_thr = .7      # merging threshold, max correlation allowed
-rf = 50             # half-size of the patches in pixels. e.g., if rf=40, patches are 80x80
+rf = 60             # half-size of the patches in pixels. e.g., if rf=40, patches are 80x80
 stride_cnmf = 20    # amount of overlap between the patches in pixels
 #                     (keep it at least large as gSiz, i.e 4 times the neuron size gSig)
 tsub = 1            # downsampling factor in time for initialization,
@@ -120,7 +121,7 @@ frate = 2                       # movie frame rate
 min_corr = .7       # min peak value from correlation image
 min_pnr = 8        # min peak to noise ration from PNR image
 ssub_B = 3          # additional downsampling factor in space for background
-ring_size_factor = 1.6  # radius of ring is gSiz*ring_size_factor
+ring_size_factor = 1.5  # radius of ring is gSiz*ring_size_factor
 file_name=os.path.join('/faststorage/project/FUNCT_ENS/CaImAnTemp/',os.path.basename(hdf5_name)+'temp.hdf5')
 opts = cnmf.params.CNMFParams(params_dict={
 								'is3D':False,
@@ -184,15 +185,16 @@ opts.change_params(params_dict=mc_dict)
 
 for slice_nb in range(1,Y.shape[-1]):
     temp=[np.squeeze(Y[:,:,:,slice_nb])]
-    fname_new = cm.save_memmap(temp,base_name=str(slice_nb)+hdf5_name[0:10], order='C',border_to_0=0, dview=dview)
+    fname_new = cm.save_memmap(temp,base_name=str(slice_nb)+os.path.basename(hdf5_name)[0:25], order='C',border_to_0=0, dview=dview)
     Yr, dims, T = cm.load_memmap(fname_new)
     Yr = np.reshape(Yr.T, [T] + list(dims), order='F')
     opts.change_params({'fnames':fname_new})
+    print(hdf5_name.replace('movie.hdf5',OutputFileAppend+'_Slice'+str(slice_nb)+'_Temp.hdf5'))
     cnm = cnmf.CNMF(n_processes, params=opts, k=K, gSig=gSig, merge_thresh=merge_thr, p=p,dview=dview,rf=rf,stride=stride_cnmf,only_init_patch=True)
     try:
-        if not glob.glob(hdf5_name.replace('.tif',OutputFileAppend+'_Slice'+str(slice_nb)+'_Temp.hdf5')):
+        if not glob.glob(hdf5_name.replace('movie.hdf5',OutputFileAppend+'_Slice'+str(slice_nb)+'_Temp.hdf5')):
             cnm.fit_file()
-            cnm.save(hdf5_name.replace('.tif',OutputFileAppend+'_Slice'+str(slice_nb)+'_Temp.hdf5'))
+            cnm.save(hdf5_name.replace('movie.hdf5',OutputFileAppend+'_Slice'+str(slice_nb)+'_Temp.hdf5'))
             min_SNR = 2            # adaptive way to set threshold on the transient size
             r_values_min = 0.6    # threshold on space consistency (if you lower more components
             #                        will be accepted, potentially with worst quality)
@@ -201,10 +203,10 @@ for slice_nb in range(1,Y.shape[-1]):
             print(' ***** ')
             print('Number of total components: ', len(cnm.estimates.C))
             print('Number of accepted components: ', len(cnm.estimates.idx_components))
-            cnm.save(hdf5_name.replace('.tif',OutputFileAppend+'_Slice'+str(slice_nb)+'.hdf5'))
+            cnm.save(hdf5_name.replace('movie.hdf5',OutputFileAppend+'_Slice'+str(slice_nb)+'.hdf5'))
             #%% RE-RUN seeded CNMF on accepted patches to refine and perform deconvolution 
             cnm2 = cnm.refit(Yr, dview=dview)
             cnm2.estimates.evaluate_components(Yr, cnm2.params, dview=dview)
-            cnm2.save(hdf5_name.replace('.tif',OutputFileAppend+'_Slice'+str(slice_nb)+'b.hdf5'))
+            cnm2.save(hdf5_name.replace('movie.hdf5',OutputFileAppend+'_Slice'+str(slice_nb)+'b.hdf5'))
     except:
         print('error with slice number: '+str(slice_nb))

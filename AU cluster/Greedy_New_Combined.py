@@ -22,7 +22,7 @@ def is_file_empty(file_path):
 def Register_single_image_SecondPass(Mov_name,template_name,Mask_name):        
  output_name = Mov_name.replace('_Warp1.nii.gz','_orig2').replace('_orig.nii.gz','.tif_orig2').replace('.tif.tif','.tif')
  if is_file_empty(output_name+'.nii.gz'):   
-  job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -mm MaskImg -sv -n 300x150x50 -e 0.25 -m NCC 2x2x2"
+  job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -mm MaskImg -sv -n 500x250x150 -e 0.25 -m NCC 2x2x2"
   job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
   call([job_string],shell=True)          
  output_image = Mov_name.replace('_Warp1.nii.gz','_Warp2')
@@ -39,7 +39,7 @@ def Register_single_image_noMask_SecondPass(Mov_name,template_name):
         step=int(file_name.split('step')[-1].split('_')[0])
         TrueSlices=(range2/step)+1;
         if TrueSlices >= 16:
-            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.25 -m NCC 2x2x2"
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 500x250x150 -e 0.25 -m NCC 2x2x2"
         else:
             job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 300x100 -e 0.25 -m NCC 2x2x2"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
@@ -53,7 +53,7 @@ def Register_single_image_noMask_SecondPass(Mov_name,template_name):
 def Register_single_image_ThirdPass(Mov_name,template_name):        
     output_name = Mov_name.replace('_Warp2.nii.gz','_orig3')    
     if is_file_empty(output_name+'.nii.gz'):
-        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 200x100x50 -e 0.15 -m NCC 2x2x2"
+        job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 500x250x150 -e 0.15 -m NCC 2x2x2"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)          
     output_image = Mov_name.replace('_Warp2.nii.gz','_Warp3')
@@ -73,9 +73,9 @@ def Register_single_image(Mov_name,template_name,Mask_name):
         step=int(file_name.split('step')[-1].split('_')[0])
         TrueSlices=(range2/step)+1;
         if TrueSlices >= 16:
-            job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -n 200x100x50 -e 0.5 -m NCC 3x3x2"
+            job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -n 500x250x150 -e 0.5 -m NCC 3x3x2"
         else:
-            job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -n 200x100x50 -e 0.5 -m NCC 3x3x2"
+            job_string = "greedy -d 3 -a -o Affine_name -i FixImg MovImg -n 500x250x150 -e 0.5 -m NCC 3x3x2"
         job_string = job_string.replace('Affine_name',Affine_name).replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)  
         print(job_string)
@@ -91,8 +91,10 @@ def Register_single_image(Mov_name,template_name,Mask_name):
 
 def FindTemplate(tif_file_folder,number_of_frames_to_check=50):
     new_dir=os.path.join(tif_file_folder,'3Dreg/')
-    tif_list_time=natsort.natsorted(glob.glob(new_dir+'*_time*.tif'))    
-    tif_list_time=[x for x in tif_list_time if 'arped' not in x]
+    tif_list_time=natsort.natsorted(glob.glob(new_dir+'*_time*.tif'))
+    if not tif_list_time:
+     tif_list_time=natsort.natsorted(glob.glob(new_dir+'*.tif'))
+    tif_list_time=[x for x in tif_list_time if ('arped' and 'template') not in x]
     for idx_nb in range(0,number_of_frames_to_check):
         file = tif_list_time[idx_nb]
         if idx_nb==0:

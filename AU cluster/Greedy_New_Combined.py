@@ -22,7 +22,7 @@ def is_file_empty(file_path):
 def Register_single_image_SecondPass(Mov_name,template_name,Mask_name):        
  output_name = Mov_name.replace('_Warp1.nii.gz','_orig2').replace('_orig.nii.gz','.tif_orig2').replace('.tif.tif','.tif')
  if is_file_empty(output_name+'.nii.gz'):   
-  job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -mm MaskImg -sv -n 500x250x150 -e 0.25 -m NCC 2x2x2"
+  job_string = "greedy -d 3 -float -o OutImg.nii.gz -i FixImg MovImg -gm MaskImg -mm MaskImg -sv -n 500x250x150 -e 0.4 -m NCC 2x2x2"
   job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name).replace('MaskImg',Mask_name)
   call([job_string],shell=True)          
  output_image = Mov_name.replace('_Warp1.nii.gz','_Warp2')
@@ -39,9 +39,9 @@ def Register_single_image_noMask_SecondPass(Mov_name,template_name):
         step=int(file_name.split('step')[-1].split('_')[0])
         TrueSlices=(range2/step)+1;
         if TrueSlices >= 16:
-            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 500x250x150 -e 0.25 -m NCC 2x2x2"
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 500x250x150 -e 0.4 -m NCC 2x2x2"
         else:
-            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 300x100 -e 0.25 -m NCC 2x2x2"
+            job_string = "greedy -d 3 -o OutImg.nii.gz -i FixImg MovImg -sv -n 300x100 -e 0.4 -m NCC 2x2x2"
         job_string = job_string.replace('OutImg',output_name).replace('FixImg',template_name).replace('MovImg',Mov_name)
         call([job_string],shell=True)          
     output_image = Mov_name.replace('_Warp1.nii.gz','_Warp2')

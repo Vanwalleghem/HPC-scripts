@@ -85,7 +85,7 @@ if len(List_files)>1200:
 #hdf5_name=hdf5_name[0].replace('.tif','_movie.hdf5')
 
 if not glob.glob(hdf5_name):
- cm.load(List_files,outtype=np.uint16, is3D=True).save(hdf5_name)
+ cm.load(List_files,outtype=np.uint16, is3D=True).save(hdf5_name,to32=False)
 
 print(hdf5_name)
 fname2 = [hdf5_name]

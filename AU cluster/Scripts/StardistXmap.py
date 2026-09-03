@@ -20,11 +20,11 @@ if 'timeseries' in locals():
  del timeseries
 
 for stardist_filename in Slice_files:
-    timeseries=np.load(stardist_filename)
+    timeseries=np.load(stardist_filename).transpose()
     tif_file_name=os.path.basename(stardist_filename).split('MaxZ')[0]
     Embed_dims=[None] * timeseries.shape[1]
     for i in range(0,timeseries.shape[1]):
         Embed_dims[i]=kedm.edim(timeseries[:,i],20,2,1)
     np.save(os.path.join(result_dir,tif_file_name+'_Embed_dimsSlices.npy'),Embed_dims)
     ccm_rho=kedm.xmap(timeseries,Embed_dims,2,1)
-    np.save(os.path.join(result_dir,tif_file_name+'_xmapSlices.npy'),ccm_rho)
+    np.save(os.path.join(result_dir,tif_file_name+'_xmapStardist.npy'),ccm_rho)

@@ -18,7 +18,7 @@ import re
 
 result_dir='/faststorage/project/FUNCT_ENS/data/XMapJacob2'
 Path(result_dir).mkdir(parents=True, exist_ok=True)
-tif_file_folder='/faststorage/project/FUNCT_ENS/data/20200729/GV_20200729_fish1_ENSGF_5DPF_range140_step5_exposure17_power60/'
+
 tif_file_folder=sys.argv[1]
 tif_file_folder=os.path.normpath(tif_file_folder)
 print(tif_file_folder)
@@ -61,7 +61,7 @@ for caiman_filename in Slice_files:
     if not 'timeseries' in locals():
         timeseries=Time_serie            
     else:
-        timeseries=np.concatenate((timeseries,Time_serie),axis=1)
+        timeseries=np.concatenate((timeseries,Time_serie),axis=0)
     np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder).split('_range')[0]+'_JacobianSlice'+str(slice_nb)+'.npy'),Time_serie)
 
 np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder).split('_range')[0]+'_JacobianSlices.npy'),timeseries)

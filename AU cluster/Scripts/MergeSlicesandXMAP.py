@@ -17,7 +17,6 @@ opencv=True
 
 
 tif_file_folder=sys.argv[1]
-
 #tif_file_folder='/faststorage/project/FUNCT_ENS/data/20200731/GV_20200731_fish4_ENSFed_7DPF_range140_step5_exposure17_power60'
 tif_file_folder=tif_file_folder.split('\r')[0]# removes the return to line
 
@@ -29,7 +28,7 @@ Slice_files=natsort.natsorted(Slice_files)
 if 'timeseries' in locals():
  del timeseries
 
-if os.path.join(tif_file_folder,os.path.basename(tif_file_folder)+'_timeseries.npy'):
+if os.path.isfile(os.path.join(tif_file_folder,os.path.basename(tif_file_folder)+'_timeseries.npy')):
   timeseries=np.load(os.path.join(tif_file_folder,os.path.basename(tif_file_folder)+'_timeseries.npy'))
 else:
  for caiman_filename in Slice_files:
@@ -47,6 +46,8 @@ else:
         timeseries=np.concatenate((timeseries,Slice_timeseries),axis=1)
         temp=np.concatenate((Slice_ROI_com, z_com),axis=1)
         ROI_com=np.concatenate((ROI_com, temp),axis=0)
+    np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder)+'_timeseries.npy'),timeseries)
+    np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder)+'_ROIs.npy'),ROI_com)
 
 tif_file_name=os.path.basename(tif_file_folder)
 if not tif_file_name:
@@ -54,13 +55,12 @@ if not tif_file_name:
 print(tif_file_folder)
 Embed_dims=[None] * timeseries.shape[1]
 for i in range(0,timeseries.shape[1]):
-    Embed_dims[i]=kedm.edim(timeseries[:,i],20,2,1)
+    Embed_dims[i]=kedm.edim(timeseries[:,i],20,5,1)
 
 np.save(os.path.join(result_dir,tif_file_name+'_Embed_dimsSlices.npy'),Embed_dims)
 
-ccm_rho=kedm.xmap(timeseries,Embed_dims,2,1)
+ccm_rho=kedm.xmap(timeseries,Embed_dims,5,1)
 np.save(os.path.join(result_dir,tif_file_name+'_xmapSlices.npy'),ccm_rho)
 
 
-np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder)+'_timeseries.npy'),timeseries)
-np.save(os.path.join(tif_file_folder,os.path.basename(tif_file_folder)+'_ROIs.npy'),ROI_com)
+

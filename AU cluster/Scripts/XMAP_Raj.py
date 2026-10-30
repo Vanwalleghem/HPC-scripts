@@ -14,6 +14,7 @@ from pathlib import Path
 os.environ["CAIMAN_TEMP"]="/faststorage/project/FUNCT_ENS/CaImAnTemp/"
 import kedm
 from caiman.source_extraction import cnmf
+from joblib import Parallel, delayed
 
 #import datetime
 #from pathlib import Path
@@ -28,6 +29,17 @@ tif_file_folder='/faststorage/project/FUNCT_ENS/data/'
 tau=10
 result_dir='/faststorage/project/FUNCT_ENS/data/XMap_tau'+str(tau)
 Path(result_dir).mkdir(parents=True, exist_ok=True)
+
+def compute_ccm(idx_x, idx_y, timeseries, Embed_dims, tau_value):
+    E = np.max([Embed_dims[idx_x], Embed_dims[idx_y]])
+    return idx_x, idx_y, kedm.ccm(
+        timeseries[:, idx_x],
+        timeseries[:, idx_y],
+        lib_sizes=[1200],
+        sample=5,
+        E=E,
+        tau=tau_value
+    )[0]
 
 caiman_filename=glob.glob(os.path.join(tif_file_folder,'**/',Caiman_file),recursive=True)[0]
 tif_file_name=os.path.basename(caiman_filename).split('.npy')[0].split('.hdf5')[0]
@@ -68,10 +80,16 @@ if not os.path.exists(os.path.join(result_dir,tif_file_name+'_xmap.npy')):
     if np.sum(np.isnan(ccm_rho))<100:
         np.save(os.path.join(result_dir,tif_file_name+'_xmap.npy'),ccm_rho)
     else:
-        for idx_x in range(0,timeseries.shape[1]):
-            for idx_y in range(0,timeseries.shape[1]):
-                ccm_rho[idx_x,idx_y]=kedm.ccm(timeseries[:,idx_x],timeseries[:,idx_y],lib_sizes=[1200],sample=5,E=np.max([Embed_dims[idx_x],Embed_dims[idx_y]]),tau=tau_value)[0]
-            np.save(os.path.join(result_dir,tif_file_name+'_xmap.npy'),ccm_rho)
+        n = timeseries.shape[1]
+        results = Parallel(n_jobs=-1)(
+            delayed(compute_ccm)(idx_x, idx_y, timeseries, Embed_dims, tau_value)
+            for idx_x in range(n)
+            for idx_y in range(n)
+        )
+        ccm_rho = np.zeros((n, n))
+        for idx_x, idx_y, val in results:
+            ccm_rho[idx_x, idx_y] = val
+        np.save(os.path.join(result_dir,tif_file_name+'_xmap.npy'),ccm_rho)
 
 #cnm_seed=cnmf.cnmf.load_CNMF(caiman_filename)
 #timeseries=cnm_seed.estimates.C
